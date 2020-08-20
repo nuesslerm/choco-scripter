@@ -2,7 +2,8 @@ const express = require('express');
 const axios = require('axios');
 const querystring = require('querystring');
 const dotenv = require('dotenv');
-const db = require('./db.js');
+const db = require('./db');
+const loadGhQueries = require('./loadGhQueries');
 
 dotenv.config();
 
@@ -48,7 +49,7 @@ app.get('/oauth/github/callback', async (req, res) => {
   const data = querystring.parse(response.data);
 
   db.gitHubStore.insert({ accessToken: data.access_token }, (err) => {
-    console.log(err);
+    if (err) throw err;
   });
 });
 

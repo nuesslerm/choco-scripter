@@ -1,6 +1,8 @@
 const inquirer = require('inquirer');
 const fs = require('fs-extra');
 const opn = require('opn');
+const loadGhQueries = require('../server/loadGhQueries');
+const db = require('../server/db');
 
 // const config =
 //   '/Users/nuesslerm/Library/Application Support/gql-playground/config.json';
@@ -19,7 +21,11 @@ const authUrl = `https://github.com/login/oauth/authorize?client_id=${ghClientId
 
 // opn(authUrl) will redirect to /oauth/github/callback so the rest will be handled by the express server
 
-opn(authUrl);
+// opn(authUrl);
+
+// db.queriesStore.insert({ queries: data }, (err) => {
+//   if (err) throw err;
+// });
 
 // --------------------------------
 
