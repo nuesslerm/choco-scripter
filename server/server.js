@@ -47,7 +47,9 @@ app.get('/oauth/github/callback', async (req, res) => {
 
   const data = querystring.parse(response.data);
 
-  console.log('accessToken', data.access_token);
+  db.gitHubStore.insert({ accessToken: data.access_token }, (err) => {
+    console.log(err);
+  });
 });
 
 app.listen(port, () => {

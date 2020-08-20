@@ -2,12 +2,12 @@ const Datastore = require('nedb');
 
 const db = {};
 db.gitHubStore = new Datastore({
-  filename: '../database/gitHubStore.db',
+  filename: 'database/gitHubStore.db',
   autoload: true,
 });
 
 db.queriesStore = new Datastore({
-  filename: '../database/queriesStore.db',
+  filename: 'database/queriesStore.db',
   autoload: true,
 });
 
