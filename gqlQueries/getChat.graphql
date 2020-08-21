@@ -1,0 +1,15 @@
+query getChat($id: ID!) {
+  chat(id: $id) {
+    id
+    chatName
+    restaurantName
+    products {
+      id
+      enabled
+      name
+      externalId
+      unit
+      par
+    }
+  }
+}
