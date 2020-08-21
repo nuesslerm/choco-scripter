@@ -405,6 +405,11 @@ at-least-node@^1.0.0:
   resolved "https://registry.yarnpkg.com/at-least-node/-/at-least-node-1.0.0.tgz#602cd4b46e844ad4effc92a8011a3c46e0238dc2"
   integrity sha512-+q/t7Ekv1EDY2l6Gda6LLiX14rU9TV20Wa3ofeQmwPFZbOMo9DXrLbOjFaaclkXKWidIaopwAObQDqwWtGUjqg==
 
+await-exec@^0.1.2:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/await-exec/-/await-exec-0.1.2.tgz#c4dc58b415f9daf34fc9d17549f40fbc4839fd6b"
+  integrity sha512-BQUiyBLScS0+YPnnCZZGjb78mZ8sQ8aKgxarDPNw05rpbaCS7VIQSLy2tgjZKct9Dn1xLbKMXOpA98OWei90zA==
+
 aws-sdk@^2.490.0, aws-sdk@^2.533.0, aws-sdk@^2.634.0:
   version "2.736.0"
   resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.736.0.tgz#7b9373d1a338288c5caeca01a6226efbade2e086"

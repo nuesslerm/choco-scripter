@@ -2,6 +2,7 @@ const inquirer = require('inquirer');
 const fs = require('fs-extra');
 const opn = require('opn');
 const uuid = require('uuid');
+const exec = require('await-exec');
 
 const { loadGhQueries } = require('../server/loadGhQueries');
 const db = require('../server/db');
@@ -17,6 +18,7 @@ let {
 const { sh } = require('./sh');
 
 const dotenv = require('dotenv');
+const { closeSync } = require('fs-extra');
 dotenv.config();
 
 // const config =
@@ -213,31 +215,29 @@ inquirer
                           })
                           // -------------------------------------------------------
                           .then(async ({ userProfile: userProfileStrArr }) => {
-                            (userProfile = userProfileStrArr.split(': ')[0]),
+                            userProfile = userProfileStrArr.split(': ')[0];
+
+                            try {
                               await fs.writeFile(
                                 `gqlQueries/${queryName}.graphql`,
-                                `${queriesObj[queryName]}`,
-                                function (err) {
-                                  if (err) throw err;
-                                }
+                                `${queriesObj[queryName]}`
                               );
 
-                            // let { stdout } = await sh(
-                            //   `choco -p ${userProfile} run -d gqlQueries/${queryName}.graphql -v ${JSON.stringify(
-                            //     orderParamObj
-                            //   )}`
-                            // );
-                            // for (let line of stdout.split('\n')) {
-                            //   console.log(`ls: ${line}`);
-                            // }
+                              const { stdout } = await exec(
+                                `choco -p ${userProfile} run -d gqlQueries/${queryName}.graphql -v '${JSON.stringify(
+                                  orderParamObj
+                                )}'`
+                              );
 
-                            console.log(
-                              // queryName,
-                              // queriesObj[queryName],
-                              // userProfile,
-                              'PARAMS',
-                              JSON.stringify(orderParamObj)
-                            );
+                              console.log(
+                                JSON.stringify(JSON.parse(stdout), null, 2)
+                              );
+                            } catch (err) {
+                              throw new Error(err);
+                            }
+
+                            // 8049abb1-7c38-40ed-aab7-6a47082f2d0a
+                            // choco -p admin run -d gqlQueries/getChat.graphql -v '{"id":"8049abb1-7c38-40ed-aab7-6a47082f2d0a"}'
                           });
                       });
                   });

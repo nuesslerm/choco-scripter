@@ -1,0 +1,14 @@
+query getCategoryProducts($chatId: ID!) {
+  categoryProducts(chatId: $chatId) {
+    id
+    name
+    products {
+      id
+      name
+      unit
+      externalId
+      par
+      price
+    }
+  }
+}
