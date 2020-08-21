@@ -4,13 +4,13 @@ const opn = require('opn');
 const loadGhQueries = require('../server/loadGhQueries');
 const db = require('../server/db');
 
+const dotenv = require('dotenv');
+dotenv.config();
+
 // const config =
 //   '/Users/nuesslerm/Library/Application Support/gql-playground/config.json';
 
 // const configObj = fs.readJSONSync(config);
-
-const dotenv = require('dotenv');
-dotenv.config();
 
 // --------------------------------
 
@@ -29,20 +29,53 @@ const authUrl = `https://github.com/login/oauth/authorize?client_id=${ghClientId
 
 // --------------------------------
 
+// const loadQueriesFromStore = async () => await db.queriesStore.find({});
+
+// (async () => {
+//   const queriesObj = await loadQueriesFromStore();
+//   console.log(queriesObj);
+// })();
+
+const loadQueriesFromStore = async () => {
+  try {
+    return await fs.readFile('database/queriesStore.db', 'utf-8');
+    // console.log(data);
+  } catch (err) {
+    if (err) throw err;
+  }
+};
+
 inquirer
-  .prompt([
-    {
-      type: 'input',
-      name: 'queryName',
-      message: 'Are you a human?',
-      default: false,
+  .prompt({
+    type: 'list',
+    name: 'queryType',
+    default: 'Query',
+    message: 'What do you want to do?',
+    choices: ['Query', 'Mutation'],
+    filter: function (val) {
+      return val.toLowerCase();
     },
-  ])
-  .then((answers) => {})
-  .catch((error) => {
-    if (error.isTtyError) {
-      // Prompt couldn't be rendered in the current environment
-    } else {
-      // Something else when wrong
-    }
+  })
+  .then(async (answer) => {
+    const { entries: queryEntries } = JSON.parse(await loadQueriesFromStore());
+
+    const [
+      {
+        object: { entries },
+      },
+    ] = queryEntries.filter((entry) => entry.name === answer.queryType);
+
+    inquirer
+      .prompt({
+        type: 'list',
+        name: 'queryName',
+        message: 'Which query would you like to execute?',
+        choices: entries.map((entry) => entry.name),
+      })
+      .then((answer) => {
+        const queryObj = entries.filter(
+          (entry) => entry.name === answer.queryName
+        );
+        console.log(queryObj);
+      });
   });

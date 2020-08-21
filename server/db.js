@@ -14,8 +14,12 @@
 const Datastore = require('nedb-promises');
 
 const db = {};
-db.gitHubStore = Datastore.create('database/gitHubStore.db');
+db.gitHubStore = Datastore.create({
+  filename: 'database/gitHubStore.db',
+});
 
-db.queriesStore = Datastore.create('database/queriesStore.db');
+db.queriesStore = Datastore.create({
+  filename: 'database/queriesStore.db',
+});
 
 module.exports = db;

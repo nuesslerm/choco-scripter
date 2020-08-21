@@ -35,8 +35,6 @@ const loadAccessToken = async () =>
 const loadGhQueries = async () => {
   const accessToken = await loadAccessToken();
 
-  console.log(accessToken);
-
   if (!accessToken) return null;
 
   const response = await axios.post(
