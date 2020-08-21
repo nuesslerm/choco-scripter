@@ -4,6 +4,7 @@ const opn = require('opn');
 const { loadGhQueries } = require('../server/loadGhQueries');
 const db = require('../server/db');
 const { loadQueriesFromStore } = require('./loadQueriesFromStore');
+const { loadChocoConfig } = require('./loadChocoConfig');
 
 const dotenv = require('dotenv');
 dotenv.config();
@@ -48,10 +49,10 @@ inquirer
       return val.toLowerCase();
     },
   })
-  .then(async (answer) => {
+  .then(async ({ queryType }) => {
     const allEntries = await loadQueriesFromStore();
 
-    const queriesObj = allEntries[answer.queryType];
+    const queriesObj = allEntries[queryType];
 
     inquirer
       .prompt({
@@ -60,8 +61,36 @@ inquirer
         message: 'Which query would you like to execute?',
         choices: Object.keys(queriesObj),
       })
-      .then((answer) => {
-        const queryObj = queriesObj[answer.queryName];
-        console.log(queryObj);
+      .then(({ queryName }) => {
+        const queryObj = queriesObj[queryName];
+
+        const queryParamArr = [
+          ...new Set(JSON.stringify(queryObj).match(/(\$)\w+/g)),
+        ];
+
+        inquirer
+          .prompt(
+            queryParamArr.map((queryParam) => ({
+              type: 'input',
+              name: `${queryParam.slice(1)}`,
+              message: `Value for ${queryParam.slice(1)}?`,
+            }))
+          )
+          .then(async (queryParamsObj) => {
+            const { profile: profiles } = await loadChocoConfig();
+
+            console.log(profiles);
+
+            inquirer
+              .prompt({
+                type: 'list',
+                name: 'profile',
+                message: 'Which profile would you like to use?',
+                choices: ['osdfj', 'jfoaij'],
+              })
+              .then(({ profile }) => {
+                console.log(profile, queryParamsObj);
+              });
+          });
       });
   });
