@@ -3,7 +3,7 @@ const axios = require('axios');
 const querystring = require('querystring');
 const dotenv = require('dotenv');
 const db = require('./db');
-const loadGhQueries = require('./loadGhQueries');
+const { loadGhQueries } = require('./loadGhQueries');
 
 dotenv.config();
 

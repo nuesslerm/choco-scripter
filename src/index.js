@@ -1,8 +1,9 @@
 const inquirer = require('inquirer');
 const fs = require('fs-extra');
 const opn = require('opn');
-const loadGhQueries = require('../server/loadGhQueries');
+const { loadGhQueries } = require('../server/loadGhQueries');
 const db = require('../server/db');
+const { loadQueriesFromStore } = require('./loadQueriesFromStore');
 
 const dotenv = require('dotenv');
 dotenv.config();
@@ -36,15 +37,6 @@ const authUrl = `https://github.com/login/oauth/authorize?client_id=${ghClientId
 //   console.log(queriesObj);
 // })();
 
-const loadQueriesFromStore = async () => {
-  try {
-    return await fs.readFile('database/queriesStore.db', 'utf-8');
-    // console.log(data);
-  } catch (err) {
-    if (err) throw err;
-  }
-};
-
 inquirer
   .prompt({
     type: 'list',
@@ -57,25 +49,19 @@ inquirer
     },
   })
   .then(async (answer) => {
-    const { entries: queryEntries } = JSON.parse(await loadQueriesFromStore());
+    const allEntries = await loadQueriesFromStore();
 
-    const [
-      {
-        object: { entries },
-      },
-    ] = queryEntries.filter((entry) => entry.name === answer.queryType);
+    const queriesObj = allEntries[answer.queryType];
 
     inquirer
       .prompt({
         type: 'list',
         name: 'queryName',
         message: 'Which query would you like to execute?',
-        choices: entries.map((entry) => entry.name),
+        choices: Object.keys(queriesObj),
       })
       .then((answer) => {
-        const queryObj = entries.filter(
-          (entry) => entry.name === answer.queryName
-        );
+        const queryObj = queriesObj[answer.queryName];
         console.log(queryObj);
       });
   });

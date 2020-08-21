@@ -48,4 +48,4 @@ const loadGhQueries = async () => {
   return response.data.data.organization.repository.content.entries;
 };
 
-module.exports = loadGhQueries;
+module.exports = { loadGhQueries };
