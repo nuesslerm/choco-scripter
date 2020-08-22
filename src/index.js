@@ -1,4 +1,6 @@
 const inquirer = require('inquirer');
+inquirer.registerPrompt('recursive', require('inquirer-recursive'));
+
 const fs = require('fs-extra');
 const opn = require('opn');
 const uuid = require('uuid');
@@ -15,10 +17,8 @@ let {
   defaultMessage,
   defaultChat,
 } = require('./queryParamDefaults');
-const { sh } = require('./sh');
 
 const dotenv = require('dotenv');
-const { closeSync } = require('fs-extra');
 dotenv.config();
 
 // const config =
@@ -50,21 +50,18 @@ const authUrl = `https://github.com/login/oauth/authorize?client_id=${ghClientId
 //   console.log(queriesObj);
 // })();
 
-function isPresent(queryParam) {
-  return function (answers) {
-    return answers[queryParam];
-  };
-}
-
 inquirer
   .prompt({
     type: 'confirm',
     name: 'ghOAuth',
-    message: 'Do you want to load queries from GitHub?',
+    message: 'Do you want to load queries from GitHub (defaul: NO)?',
     default: false,
   })
   // ---------------------------------------------------------------------------
   .then(({ ghOAuth }) => {
+    let globalaAnswersMap = new Map();
+    globalaAnswersMap.set('ghOAuth', ghOAuth);
+
     // launching the browser and accessing github OAuth
 
     inquirer
@@ -85,21 +82,31 @@ inquirer
 
         const queriesObj = allEntries[queryType];
 
+        globalaAnswersMap.set('queriesObj', queriesObj);
+
         inquirer
           .prompt({
             type: 'list',
             name: 'queryName',
             message: 'Which query would you like to execute?',
             choices: Object.keys(queriesObj),
-            default: 'orderCreate',
+            default: () => {
+              if (queryType === 'mutation') {
+                return 'orderCreate';
+              } else {
+                return 'getChat';
+              }
+            },
           })
           // -----------------------------------------------------------------------
           .then(({ queryName }) => {
-            const queryObj = queriesObj[queryName];
-
             const queryParamArr = [
-              ...new Set(JSON.stringify(queryObj).match(/(\$)\w+/g)),
+              ...new Set(
+                JSON.stringify(queriesObj[queryName]).match(/(\$)\w+/g)
+              ),
             ];
+
+            globalaAnswersMap.set('queryParamArr', queryParamArr);
 
             inquirer
               .prompt([
@@ -130,24 +137,24 @@ inquirer
                   name: 'orderNum',
                   message: `How many products should the order contain?`,
                   default: Math.floor(Math.random() * 19 + 1),
-                  when: (orderParamObj) => orderParamObj['order'],
+                  when: (paramObj) => paramObj['order'],
                 },
                 {
                   type: 'input',
                   name: 'productNum',
                   message: `How many products should the batchCreate contain?`,
                   default: Math.floor(Math.random() * 199 + 1),
-                  when: (orderParamObj) => orderParamObj['products'],
+                  when: (paramObj) => paramObj['products'],
                 },
               ])
               // -------------------------------------------------------------------
-              .then(async ({ orderNum, productNum, ...orderParamObj }) => {
+              .then(async ({ orderNum, productNum, ...paramObj }) => {
                 if (orderNum) {
-                  orderParamObj['order'] = defaultOrder(parseInt(orderNum));
+                  paramObj['order'] = defaultOrder(parseInt(orderNum));
                 }
 
                 if (productNum) {
-                  orderParamObj['products'] = defaultProductArr(
+                  paramObj['products'] = defaultProductArr(
                     parseInt(productNum)
                   );
                 }
@@ -161,6 +168,10 @@ inquirer
                 for (let configProfile of configProfilesArr) {
                   stageSet.add(configProfile.stage);
                 }
+
+                globalaAnswersMap.set('orderNum', orderNum);
+                globalaAnswersMap.set('productNum', productNum);
+                globalaAnswersMap.set('paramObj', paramObj);
 
                 inquirer
                   .prompt({
@@ -178,6 +189,8 @@ inquirer
                         userTypeSet.add(configProfile.userType);
                       }
                     }
+
+                    globalaAnswersMap.set('environment', environment);
 
                     inquirer
                       .prompt({
@@ -203,6 +216,8 @@ inquirer
                           }
                         }
 
+                        globalaAnswersMap.set('userType', userType);
+
                         inquirer
                           .prompt({
                             type: 'list',
@@ -213,9 +228,20 @@ inquirer
                                 `${profile.key}: ${profile.userIdentifier}`
                             ),
                           })
-                          // -------------------------------------------------------
+                          // --------------------------------------------------------
                           .then(async ({ userProfile: userProfileStrArr }) => {
                             userProfile = userProfileStrArr.split(': ')[0];
+
+                            globalaAnswersMap.set('userProfile', userProfile);
+
+                            const cmdStrGen = (
+                              userProfileIn,
+                              queryNameIn,
+                              paramObjIn
+                            ) =>
+                              `choco -p ${userProfileIn} run -d gqlQueries/${queryNameIn}.graphql -v '${JSON.stringify(
+                                paramObjIn
+                              )}'`;
 
                             try {
                               await fs.writeFile(
@@ -224,17 +250,28 @@ inquirer
                               );
 
                               const { stdout } = await exec(
-                                `choco -p ${userProfile} run -d gqlQueries/${queryName}.graphql -v '${JSON.stringify(
-                                  orderParamObj
-                                )}'`
+                                cmdStrGen(userProfile, queryName, paramObj)
                               );
 
-                              console.log(
-                                JSON.stringify(JSON.parse(stdout), null, 2)
+                              let parsedResponse = JSON.stringify(
+                                JSON.parse(stdout),
+                                null,
+                                2
                               );
+
+                              console.log(parsedResponse);
                             } catch (err) {
                               throw new Error(err);
                             }
+
+                            repeatQuery(
+                              cmdStrGen,
+                              queryParamArr,
+                              paramObj,
+                              orderNum,
+                              productNum,
+                              globalaAnswersMap
+                            );
 
                             // 8049abb1-7c38-40ed-aab7-6a47082f2d0a
                             // choco -p admin run -d gqlQueries/getChat.graphql -v '{"id":"8049abb1-7c38-40ed-aab7-6a47082f2d0a"}'
@@ -245,3 +282,93 @@ inquirer
           });
       });
   });
+
+function repeatQuery(
+  cmdStrGenerator,
+  prevQueryParamArr,
+  prevParamObj,
+  prevOrderNum,
+  prevProductNum,
+  prevAnswersMap
+) {
+  inquirer
+    .prompt([
+      {
+        type: 'confirm',
+        name: 'askAgain',
+        message: 'Do you want to run the query again (default: YES)?',
+        default: true,
+      },
+      ...prevQueryParamArr.map((queryParam) => ({
+        type: 'input',
+        name: `${queryParam.slice(1)}`,
+        message: `Value for ${queryParam.slice(1)}?`,
+        when: (answers) => answers['askAgain'],
+        // default: () => prevAnswersMap.get('paramObj')[queryParam.slice(1)],
+        default: () => {
+          if (/order/gi.test(queryParam)) {
+            return 'OrderInput - auto-generated';
+          } else if (/products/gi.test(queryParam)) {
+            return '[AdminProductInput] - auto-generated';
+          } else {
+            return prevParamObj[queryParam.slice(1)];
+          }
+        },
+      })),
+      {
+        type: 'input',
+        name: 'orderNum',
+        message: `How many products should the order contain?`,
+        when: (newParamObj) => newParamObj['order'],
+        default: () => prevOrderNum,
+      },
+      {
+        type: 'input',
+        name: 'productNum',
+        message: `How many products should the batchCreate contain?`,
+        when: (newParamObj) => newParamObj['products'],
+        default: () => prevProductNum,
+      },
+    ])
+    // -------------------------------------------------------------------------
+    .then(async ({ askAgain, newOrderNum, newProductNum, ...newParamObj }) => {
+      if (askAgain) {
+        if (newOrderNum) {
+          newParamObj['order'] = defaultOrder(parseInt(newOrderNum));
+        }
+
+        if (newProductNum) {
+          newParamObj['products'] = defaultProductArr(parseInt(newProductNum));
+        }
+
+        console.log(newParamObj);
+
+        try {
+          const { stdout } = await exec(
+            cmdStrGenerator(
+              prevAnswersMap.get('userProfile'),
+              prevAnswersMap.get('queryName'),
+              newParamObj
+            )
+          );
+
+          let parsedResponse = JSON.stringify(JSON.parse(stdout), null, 2);
+
+          console.log(parsedResponse);
+        } catch (err) {
+          throw new Error(err);
+        }
+
+        repeatQuery(
+          cmdStrGenerator,
+          prevQueryParamArr,
+          newParamObj,
+          newOrderNum,
+          newProductNum,
+          prevAnswersMap
+        );
+      } else {
+        console.log('Bye!');
+      }
+    });
+}

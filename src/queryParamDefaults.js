@@ -4,23 +4,26 @@ const defaultOrder = (num) => ({
   body: `Order ${Date.now()}`,
   deliveryDate: 1600002000000,
   orderProducts: [...Array(num)].map(() => ({
-    name: `product ${uuid.v4()}`,
-    unit: 'kg',
-    supplierId: uuid.v4(),
+    amount: Math.floor(Math.random() * 19 + 1),
+    product: {
+      id: uuid.v4(),
+      name: `product ${uuid.v4()}`,
+      unit: 'kg',
+    },
   })),
 });
 
 const defaultProductArr = (num) =>
   [...Array(num)].map(() => ({
+    id: uuid.v4(),
     name: `product ${uuid.v4()}`,
     unit: 'kg',
-    supplierId: uuid.v4(),
   }));
 
 const defaultProduct = {
+  id: uuid.v4(),
   name: `product ${uuid.v4()}`,
   unit: 'kg',
-  supplierId: uuid.v4(),
 };
 
 const defaultMessage = {
