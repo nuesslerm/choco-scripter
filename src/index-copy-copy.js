@@ -65,6 +65,96 @@ async function main() {
 
   // ---------------------------------------------------------------------------
 
+  const { queryType } = await inquirer.prompt({
+    type: 'list',
+    name: 'queryType',
+    default: 'Query',
+    message: 'What do you want to do?',
+    choices: ['Mutation', 'Query'],
+    default: 'Mutation',
+    filter: function (val) {
+      return val.toLowerCase();
+    },
+  });
+
+  const allEntries = await loadQueriesFromStore();
+
+  const queriesObj = allEntries[queryType];
+
+  globalaAnswersMap.set('queriesObj', queriesObj);
+
+  // ---------------------------------------------------------------------------
+
+  const { queryName } = await inquirer.prompt({
+    type: 'list',
+    name: 'queryName',
+    message: 'Which query would you like to execute?',
+    choices: Object.keys(queriesObj),
+    default: () => {
+      if (queryType === 'mutation') {
+        return 'orderCreate';
+      } else {
+        return 'getChat';
+      }
+    },
+  });
+
+  const queryParamArr = [
+    ...new Set(JSON.stringify(queriesObj[queryName]).match(/(\$)\w+/g)),
+  ];
+
+  globalaAnswersMap.set('queryName', queryName);
+  globalaAnswersMap.set('queryParamArr', queryParamArr);
+
+  // ---------------------------------------------------------------------------
+
+  const { orderNum, productNum, ...paramObj } = await inquirer.prompt([
+    ...queryParamArr.map((queryParam) => ({
+      type: 'input',
+      name: `${queryParam.slice(1)}`,
+      message: `Value for ${queryParam.slice(1)}?`,
+      default: () => {
+        if (/id/gi.test(queryParam)) {
+          return uuid.v4();
+        } else if (/order/gi.test(queryParam)) {
+          return 'OrderInput - auto-generated';
+        } else if (/products/gi.test(queryParam)) {
+          return '[AdminProductInput] - auto-generated';
+        } else if (/product/gi.test(queryParam)) {
+          return defaultProduct;
+        } else if (/dryRun/gi.test(queryParam)) {
+          return false;
+        } else if (/message/gi.test(queryParam)) {
+          return defaultMessage;
+        } else if (/chat/gi.test(queryParam)) {
+          return defaultChat;
+        }
+      },
+    })),
+    {
+      type: 'input',
+      name: 'orderNum',
+      message: `How many products should the order contain?`,
+      default: Math.floor(Math.random() * 19 + 1),
+      when: (paramObj) => paramObj['order'],
+    },
+    {
+      type: 'input',
+      name: 'productNum',
+      message: `How many products should the batchCreate contain?`,
+      default: Math.floor(Math.random() * 199 + 1),
+      when: (paramObj) => paramObj['products'],
+    },
+  ]);
+
+  if (!!orderNum) {
+    paramObj['order'] = defaultOrder(parseInt(orderNum));
+  }
+
+  if (!!productNum) {
+    paramObj['products'] = defaultProductArr(parseInt(productNum));
+  }
+
   const { profile: configProfilesObj } = await loadChocoConfig();
 
   configProfilesArr = Object.values(configProfilesObj);
@@ -74,6 +164,10 @@ async function main() {
   for (let configProfile of configProfilesArr) {
     stageSet.add(configProfile.stage);
   }
+
+  globalaAnswersMap.set('orderNum', orderNum);
+  globalaAnswersMap.set('productNum', productNum);
+  globalaAnswersMap.set('paramObj', paramObj);
 
   // ---------------------------------------------------------------------------
 
@@ -134,9 +228,25 @@ async function main() {
 
   globalaAnswersMap.set('userProfile', userProfile);
 
-  // ---------------------------------------------------------------------------
-  // START OF RECURSIVE PART
-  // ---------------------------------------------------------------------------
+  const cmdStrGen = (userProfileIn, queryNameIn, paramObjIn) =>
+    `choco -p ${userProfileIn} run -d gqlQueries/${queryNameIn}.graphql -v '${JSON.stringify(
+      paramObjIn
+    )}'`;
+
+  try {
+    await fs.writeFile(
+      `gqlQueries/${queryName}.graphql`,
+      `${queriesObj[queryName]}`
+    );
+
+    const { stdout } = await exec(cmdStrGen(userProfile, queryName, paramObj));
+
+    let parsedResponse = JSON.stringify(JSON.parse(stdout), null, 2);
+
+    console.log(parsedResponse);
+  } catch (err) {
+    throw new Error(err);
+  }
 
   await repeatQuery(
     cmdStrGen,
@@ -150,125 +260,38 @@ async function main() {
   // 8049abb1-7c38-40ed-aab7-6a47082f2d0a
 }
 
-// ---------------------------------------------------------------------------
-// HELPER FUNCTIONS
-// ---------------------------------------------------------------------------
-
-const cmdStrGen = (userProfileIn, queryNameIn, paramObjIn) =>
-  `choco -p ${userProfileIn} run -d gqlQueries/${queryNameIn}.graphql -v '${JSON.stringify(
-    paramObjIn
-  )}'`;
-
-// ---------------------------------------------------------------------------
-
 async function repeatQuery(
+  cmdStrGenerator,
   prevQueryParamArr,
   prevParamObj,
   prevOrderNum,
   prevProductNum,
-  prevAnswersMap,
-  cmdStrGenerator,
-  firstRun = true
+  prevAnswersMap
 ) {
-  let askAgain = false;
-  let sameQuery = true;
-
-  if (!firstRun) {
-    const answer = await inquirer.prompt([
-      {
-        type: 'confirm',
-        name: 'askAgain',
-        message: 'Do you want to run the query again (default: YES)?',
-        default: true,
-      },
-      {
-        type: 'confirm',
-        name: 'sameQuery',
-        message: 'Do you want to run the same query again (default: YES)?',
-        default: true,
-      },
-    ]);
-
-    askAgain = answer.askAgain;
-    sameQuery = answer.sameQuery;
-  }
-
-  if (!sameQuery) {
-    const { queryType } = await inquirer.prompt({
-      type: 'list',
-      name: 'queryType',
-      default: 'Query',
-      message: 'What do you want to do?',
-      choices: ['Mutation', 'Query'],
-      default: 'Mutation',
-      filter: function (val) {
-        return val.toLowerCase();
-      },
-    });
-
-    const allEntries = await loadQueriesFromStore();
-
-    const queriesObj = allEntries[queryType];
-
-    globalaAnswersMap.set('queriesObj', queriesObj);
-
-    // ---------------------------------------------------------------------------
-
-    const { queryName } = await inquirer.prompt({
-      type: 'list',
-      name: 'queryName',
-      message: 'Which query would you like to execute?',
-      choices: Object.keys(queriesObj),
-      default: () => {
-        if (queryType === 'mutation') {
-          return 'orderCreate';
-        } else {
-          return 'getChat';
-        }
-      },
-    });
-
-    const queryParamArr = [
-      ...new Set(JSON.stringify(queriesObj[queryName]).match(/(\$)\w+/g)),
-    ];
-
-    globalaAnswersMap.set('queryName', queryName);
-    globalaAnswersMap.set('queryParamArr', queryParamArr);
-  }
-
-  // ---------------------------------------------------------------------------
-
-  const { newOrderNum, newProductNum, ...newParamObj } = await inquirer.prompt([
+  const {
+    askAgain,
+    newOrderNum,
+    newProductNum,
+    ...newParamObj
+  } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'askAgain',
+      message: 'Do you want to run the query again (default: YES)?',
+      default: true,
+    },
     ...prevQueryParamArr.map((queryParam) => ({
       type: 'input',
       name: `${queryParam.slice(1)}`,
       message: `Value for ${queryParam.slice(1)}?`,
       when: (answers) => answers['askAgain'],
       default: () => {
-        if (firstRun) {
-          if (/id/gi.test(queryParam)) {
-            return uuid.v4();
-          } else if (/order/gi.test(queryParam)) {
-            return 'OrderInput - auto-generated';
-          } else if (/products/gi.test(queryParam)) {
-            return '[AdminProductInput] - auto-generated';
-          } else if (/product/gi.test(queryParam)) {
-            return defaultProduct;
-          } else if (/dryRun/gi.test(queryParam)) {
-            return false;
-          } else if (/message/gi.test(queryParam)) {
-            return defaultMessage;
-          } else if (/chat/gi.test(queryParam)) {
-            return defaultChat;
-          }
+        if (/order/gi.test(queryParam)) {
+          return 'OrderInput - auto-generated';
+        } else if (/products/gi.test(queryParam)) {
+          return '[AdminProductInput] - auto-generated';
         } else {
-          if (/order/gi.test(queryParam)) {
-            return 'OrderInput - auto-generated';
-          } else if (/products/gi.test(queryParam)) {
-            return '[AdminProductInput] - auto-generated';
-          } else {
-            return prevParamObj[queryParam.slice(1)];
-          }
+          return prevParamObj[queryParam.slice(1)];
         }
       },
     })),
@@ -277,67 +300,28 @@ async function repeatQuery(
       name: 'newOrderNum',
       message: `How many products should the order contain?`,
       when: (newParamObj) => newParamObj['order'],
-      default: () => {
-        if (firstRun) {
-          return Math.floor(Math.random() * 19 + 1);
-        } else {
-          return prevOrderNum;
-        }
-      },
+      default: () => prevOrderNum,
     },
     {
       type: 'input',
       name: 'newProductNum',
       message: `How many products should the batchCreate contain?`,
       when: (newParamObj) => newParamObj['products'],
-      default: () => {
-        if (firstRun) {
-          return Math.floor(Math.random() * 199 + 1);
-        } else {
-          return prevProductNum;
-        }
-      },
+      default: () => prevProductNum,
     },
   ]);
-
-  if (!!newOrderNum) {
-    newParamObj['order'] = defaultOrder(parseInt(newOrderNum));
-  }
-
-  if (!!newProductNum) {
-    newParamObj['products'] = defaultProductArr(parseInt(newProductNum));
-  }
-
-  globalaAnswersMap.set('orderNum', newOrderNum);
-  globalaAnswersMap.set('productNum', newProductNum);
-  globalaAnswersMap.set('paramObj', newParamObj);
-
-  // ---------------------------------------------------------------------------
-
-  if (!sameQuery) {
-    try {
-      await fs.writeFile(
-        `gqlQueries/${queryName}.graphql`,
-        `${queriesObj[queryName]}`
-      );
-    } catch (err) {
-      throw new Error(err);
-    }
-  }
-
-  try {
-    const { stdout } = await exec(cmdStrGen(userProfile, queryName, paramObj));
-
-    let parsedResponse = JSON.stringify(JSON.parse(stdout), null, 2);
-
-    console.log(parsedResponse);
-  } catch (err) {
-    throw new Error(err);
-  }
 
   // ---------------------------------------------------------------------------
 
   if (askAgain) {
+    if (!!newOrderNum) {
+      newParamObj['order'] = defaultOrder(parseInt(newOrderNum));
+    }
+
+    if (!!newProductNum) {
+      newParamObj['products'] = defaultProductArr(parseInt(newProductNum));
+    }
+
     try {
       const { stdout } = await exec(
         cmdStrGenerator(
@@ -355,13 +339,12 @@ async function repeatQuery(
     }
 
     await repeatQuery(
+      cmdStrGenerator,
       prevQueryParamArr,
       newParamObj,
       newOrderNum,
       newProductNum,
-      prevAnswersMap,
-      cmdStrGenerator,
-      false
+      prevAnswersMap
     );
   } else {
     console.log('Bye! 👋');
