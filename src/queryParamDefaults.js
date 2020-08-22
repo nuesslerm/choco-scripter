@@ -19,11 +19,11 @@ const defaultOrder = (num) => {
   };
 };
 
-const defaultProductArr = (num) => {
+const defaultAdminProductArr = (num) => {
   if (num <= 0) num = 1;
-  [...Array(num)].map((product, i) => ({
-    id: uuid.v4(),
-    name: `Product #${i + 1}`,
+  return [...Array(num)].map((product, i) => ({
+    // id: uuid.v4(), <- not defined for input object type 'AdminProductInput'
+    name: `Product #${i + 1} ${uuid.v4().slice(0, 5)}`,
     unit: _.sample(['kg', 'litre', 'case', 'CA', 'box']),
     externalId: `${uuid.v4().slice(0, 6)}`,
     par: Math.floor(Math.random() * 19 + 19),
@@ -57,7 +57,7 @@ const defaultChat = {
 
 module.exports = {
   defaultOrder,
-  defaultProductArr,
+  defaultAdminProductArr,
   defaultProduct,
   defaultMessage,
   defaultChat,
