@@ -295,6 +295,8 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
     }
   }
 
+  console.log(cmdStrGen(prevAnswersMap['userProfile'], queryName, newParamObj));
+
   try {
     const { stdout } = await exec(
       cmdStrGen(prevAnswersMap['userProfile'], queryName, newParamObj)
