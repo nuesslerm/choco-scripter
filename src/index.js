@@ -135,12 +135,10 @@ async function main() {
   answersMap['userProfile'] = userProfile;
 
   // ---------------------------------------------------------------------------
-  // START OF RECURSIVE PART
+  // START OF RECURSION
   // ---------------------------------------------------------------------------
 
-  await repeatQuery(answersMap, true);
-
-  // 8049abb1-7c38-40ed-aab7-6a47082f2d0a
+  await repeatQuery(answersMap, false);
 }
 
 // ---------------------------------------------------------------------------
@@ -153,37 +151,19 @@ const cmdStrGen = (userProfileIn, queryNameIn, paramObjIn) =>
   )}'`;
 
 // ---------------------------------------------------------------------------
+// RECURSIVE FUNCTION
+// ---------------------------------------------------------------------------
 
-async function repeatQuery(
-  prevQueryParamArr,
-  prevParamObj,
-  prevOrderNum,
-  prevProductNum,
-  prevAnswersMap,
-  firstRun
-) {
-  let askAgain = false;
-  let sameQuery = true;
+async function repeatQuery(prevAnswersMap, sameQuery) {
+  let {
+    queryParamArr: prevQueryParamArr,
+    paramObj: prevParamObj,
+    orderNum: prevOrderNum,
+    productNum: prevProductNum,
+  } = prevAnswersMap;
 
-  if (!firstRun) {
-    const answer = await inquirer.prompt([
-      {
-        type: 'confirm',
-        name: 'askAgain',
-        message: 'Do you want to run the query again (default: YES)?',
-        default: true,
-      },
-      {
-        type: 'confirm',
-        name: 'sameQuery',
-        message: 'Do you want to run the same query again (default: YES)?',
-        default: true,
-      },
-    ]);
-
-    askAgain = answer.askAgain;
-    sameQuery = answer.sameQuery;
-  }
+  // console.log(prevAnswersMap, sameQuery);
+  // console.log(prevQueryParamArr, prevParamObj, prevOrderNum, prevProductNum);
 
   if (!sameQuery) {
     const { queryType } = await inquirer.prompt({
@@ -220,24 +200,33 @@ async function repeatQuery(
       },
     });
 
-    const queryParamArr = [
+    const newQueryParamArr = [
       ...new Set(JSON.stringify(queriesObj[queryName]).match(/(\$)\w+/g)),
     ];
 
+    console.log(newQueryParamArr);
+
     prevAnswersMap['queryName'] = queryName;
-    prevAnswersMap['queryParamArr'] = queryParamArr;
+    prevAnswersMap['queryParamArr'] = newQueryParamArr;
   }
 
   // ---------------------------------------------------------------------------
 
   const { newOrderNum, newProductNum, ...newParamObj } = await inquirer.prompt([
-    ...prevQueryParamArr.map((queryParam) => ({
+    ...prevAnswersMap['queryParamArr'].map((queryParam) => ({
       type: 'input',
       name: `${queryParam.slice(1)}`,
       message: `Value for ${queryParam.slice(1)}?`,
-      when: (answers) => answers['askAgain'],
       default: () => {
-        if (firstRun) {
+        if (sameQuery) {
+          if (/order/gi.test(queryParam)) {
+            return 'OrderInput - auto-generated';
+          } else if (/products/gi.test(queryParam)) {
+            return '[AdminProductInput] - auto-generated';
+          } else {
+            return prevAnswersMap['paramObj'][queryParam.slice(1)];
+          }
+        } else {
           if (/id/gi.test(queryParam)) {
             return uuid.v4();
           } else if (/order/gi.test(queryParam)) {
@@ -253,14 +242,6 @@ async function repeatQuery(
           } else if (/chat/gi.test(queryParam)) {
             return defaultChat;
           }
-        } else {
-          if (/order/gi.test(queryParam)) {
-            return 'OrderInput - auto-generated';
-          } else if (/products/gi.test(queryParam)) {
-            return '[AdminProductInput] - auto-generated';
-          } else {
-            return prevParamObj[queryParam.slice(1)];
-          }
         }
       },
     })),
@@ -270,10 +251,10 @@ async function repeatQuery(
       message: `How many products should the order contain?`,
       when: (newParamObj) => newParamObj['order'],
       default: () => {
-        if (firstRun) {
-          return Math.floor(Math.random() * 19 + 1);
+        if (sameQuery) {
+          return prevAnswersMap['orderNum'];
         } else {
-          return prevOrderNum;
+          return Math.floor(Math.random() * 19 + 1);
         }
       },
     },
@@ -283,10 +264,10 @@ async function repeatQuery(
       message: `How many products should the batchCreate contain?`,
       when: (newParamObj) => newParamObj['products'],
       default: () => {
-        if (firstRun) {
-          return Math.floor(Math.random() * 199 + 1);
+        if (sameQuery) {
+          return prevAnswersMap['productNum'];
         } else {
-          return prevProductNum;
+          return Math.floor(Math.random() * 199 + 1);
         }
       },
     },
@@ -309,8 +290,8 @@ async function repeatQuery(
   if (!sameQuery) {
     try {
       await fs.writeFile(
-        `gqlQueries/${queryName}.graphql`,
-        `${queriesObj[queryName]}`
+        `gqlQueries/${prevAnswersMap['queryName']}.graphql`,
+        `${prevAnswersMap['queriesObj'][prevAnswersMap['queryName']]}`
       );
     } catch (err) {
       throw new Error(err);
@@ -318,7 +299,13 @@ async function repeatQuery(
   }
 
   try {
-    const { stdout } = await exec(cmdStrGen(userProfile, queryName, paramObj));
+    const { stdout } = await exec(
+      cmdStrGen(
+        prevAnswersMap['userProfile'],
+        prevAnswersMap['queryName'],
+        newParamObj
+      )
+    );
 
     let parsedResponse = JSON.stringify(JSON.parse(stdout), null, 2);
 
@@ -331,34 +318,29 @@ async function repeatQuery(
   // REPEATING THE LOOP
   // ---------------------------------------------------------------------------
 
+  const { askAgain, sameQueryUpdate } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'askAgain',
+      message: 'Do you want to run the query again (default: YES)?',
+      default: true,
+    },
+    {
+      type: 'confirm',
+      name: 'sameQueryUpdate',
+      message: 'Do you want to run the same query again (default: YES)?',
+      when: (answers) => answers.askAgain,
+      default: true,
+    },
+  ]);
+
   if (askAgain) {
-    try {
-      const { stdout } = await exec(
-        cmdStrGenerator(
-          prevAnswersMap['userProfile'],
-          prevAnswersMap['queryName'],
-          newParamObj
-        )
-      );
-
-      let parsedResponse = JSON.stringify(JSON.parse(stdout), null, 2);
-
-      console.log(parsedResponse);
-    } catch (err) {
-      throw new Error(err);
-    }
-
-    await repeatQuery(
-      prevQueryParamArr,
-      newParamObj,
-      newOrderNum,
-      newProductNum,
-      prevAnswersMap,
-      false
-    );
+    await repeatQuery(prevAnswersMap, sameQueryUpdate);
   } else {
     console.log('Bye! 👋');
   }
 }
 
 main();
+
+// 8049abb1-7c38-40ed-aab7-6a47082f2d0a
