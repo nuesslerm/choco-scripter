@@ -58,102 +58,12 @@ async function main() {
     default: false,
   });
 
-  let globalaAnswersMap = new Map();
-  globalaAnswersMap.set('ghOAuth', ghOAuth);
+  const answersMap = {};
+  answersMap['ghOAuth'] = ghOAuth;
 
   // launching the browser and accessing github OAuth
 
   // ---------------------------------------------------------------------------
-
-  const { queryType } = await inquirer.prompt({
-    type: 'list',
-    name: 'queryType',
-    default: 'Query',
-    message: 'What do you want to do?',
-    choices: ['Mutation', 'Query'],
-    default: 'Mutation',
-    filter: function (val) {
-      return val.toLowerCase();
-    },
-  });
-
-  const allEntries = await loadQueriesFromStore();
-
-  const queriesObj = allEntries[queryType];
-
-  globalaAnswersMap.set('queriesObj', queriesObj);
-
-  // ---------------------------------------------------------------------------
-
-  const { queryName } = await inquirer.prompt({
-    type: 'list',
-    name: 'queryName',
-    message: 'Which query would you like to execute?',
-    choices: Object.keys(queriesObj),
-    default: () => {
-      if (queryType === 'mutation') {
-        return 'orderCreate';
-      } else {
-        return 'getChat';
-      }
-    },
-  });
-
-  const queryParamArr = [
-    ...new Set(JSON.stringify(queriesObj[queryName]).match(/(\$)\w+/g)),
-  ];
-
-  globalaAnswersMap.set('queryName', queryName);
-  globalaAnswersMap.set('queryParamArr', queryParamArr);
-
-  // ---------------------------------------------------------------------------
-
-  const { orderNum, productNum, ...paramObj } = await inquirer.prompt([
-    ...queryParamArr.map((queryParam) => ({
-      type: 'input',
-      name: `${queryParam.slice(1)}`,
-      message: `Value for ${queryParam.slice(1)}?`,
-      default: () => {
-        if (/id/gi.test(queryParam)) {
-          return uuid.v4();
-        } else if (/order/gi.test(queryParam)) {
-          return 'OrderInput - auto-generated';
-        } else if (/products/gi.test(queryParam)) {
-          return '[AdminProductInput] - auto-generated';
-        } else if (/product/gi.test(queryParam)) {
-          return defaultProduct;
-        } else if (/dryRun/gi.test(queryParam)) {
-          return false;
-        } else if (/message/gi.test(queryParam)) {
-          return defaultMessage;
-        } else if (/chat/gi.test(queryParam)) {
-          return defaultChat;
-        }
-      },
-    })),
-    {
-      type: 'input',
-      name: 'orderNum',
-      message: `How many products should the order contain?`,
-      default: Math.floor(Math.random() * 19 + 1),
-      when: (paramObj) => paramObj['order'],
-    },
-    {
-      type: 'input',
-      name: 'productNum',
-      message: `How many products should the batchCreate contain?`,
-      default: Math.floor(Math.random() * 199 + 1),
-      when: (paramObj) => paramObj['products'],
-    },
-  ]);
-
-  if (!!orderNum) {
-    paramObj['order'] = defaultOrder(parseInt(orderNum));
-  }
-
-  if (!!productNum) {
-    paramObj['products'] = defaultProductArr(parseInt(productNum));
-  }
 
   const { profile: configProfilesObj } = await loadChocoConfig();
 
@@ -164,10 +74,6 @@ async function main() {
   for (let configProfile of configProfilesArr) {
     stageSet.add(configProfile.stage);
   }
-
-  globalaAnswersMap.set('orderNum', orderNum);
-  globalaAnswersMap.set('productNum', productNum);
-  globalaAnswersMap.set('paramObj', paramObj);
 
   // ---------------------------------------------------------------------------
 
@@ -186,7 +92,7 @@ async function main() {
     }
   }
 
-  globalaAnswersMap.set('environment', environment);
+  answersMap['environment'] = environment;
 
   // ---------------------------------------------------------------------------
 
@@ -211,7 +117,7 @@ async function main() {
     }
   }
 
-  globalaAnswersMap.set('userType', userType);
+  answersMap['userType'] = userType;
 
   // ---------------------------------------------------------------------------
 
@@ -226,72 +132,111 @@ async function main() {
 
   userProfile = userProfileStrArr.split(': ')[0];
 
-  globalaAnswersMap.set('userProfile', userProfile);
+  answersMap['userProfile'] = userProfile;
 
-  const cmdStrGen = (userProfileIn, queryNameIn, paramObjIn) =>
-    `choco -p ${userProfileIn} run -d gqlQueries/${queryNameIn}.graphql -v '${JSON.stringify(
-      paramObjIn
-    )}'`;
+  // ---------------------------------------------------------------------------
+  // START OF RECURSION
+  // ---------------------------------------------------------------------------
 
-  try {
-    await fs.writeFile(
-      `gqlQueries/${queryName}.graphql`,
-      `${queriesObj[queryName]}`
-    );
-
-    const { stdout } = await exec(cmdStrGen(userProfile, queryName, paramObj));
-
-    let parsedResponse = JSON.stringify(JSON.parse(stdout), null, 2);
-
-    console.log(parsedResponse);
-  } catch (err) {
-    throw new Error(err);
-  }
-
-  await repeatQuery(
-    cmdStrGen,
-    queryParamArr,
-    paramObj,
-    orderNum,
-    productNum,
-    globalaAnswersMap
-  );
-
-  // 8049abb1-7c38-40ed-aab7-6a47082f2d0a
+  await repeatQuery(answersMap, false);
 }
 
-async function repeatQuery(
-  cmdStrGenerator,
-  prevQueryParamArr,
-  prevParamObj,
-  prevOrderNum,
-  prevProductNum,
-  prevAnswersMap
-) {
-  const {
-    askAgain,
-    newOrderNum,
-    newProductNum,
-    ...newParamObj
-  } = await inquirer.prompt([
-    {
-      type: 'confirm',
-      name: 'askAgain',
-      message: 'Do you want to run the query again (default: YES)?',
-      default: true,
-    },
-    ...prevQueryParamArr.map((queryParam) => ({
+// ---------------------------------------------------------------------------
+// HELPER FUNCTIONS
+// ---------------------------------------------------------------------------
+
+const cmdStrGen = (userProfileIn, queryNameIn, paramObjIn) =>
+  `choco -p ${userProfileIn} run -d gqlQueries/${queryNameIn}.graphql -v '${JSON.stringify(
+    paramObjIn
+  )}'`;
+
+// ---------------------------------------------------------------------------
+// RECURSIVE FUNCTION
+// ---------------------------------------------------------------------------
+
+async function repeatQuery(prevAnswersMap, sameQuery) {
+  let {
+    queriesObj,
+    queryName,
+    queryParamArr,
+    paramObj: prevParamObj,
+  } = prevAnswersMap;
+
+  if (!sameQuery) {
+    const { queryType } = await inquirer.prompt({
+      type: 'list',
+      name: 'queryType',
+      default: 'Query',
+      message: 'What do you want to do?',
+      choices: ['Mutation', 'Query'],
+      default: 'Mutation',
+      filter: function (val) {
+        return val.toLowerCase();
+      },
+    });
+
+    const allEntries = await loadQueriesFromStore();
+
+    queriesObj = allEntries[queryType];
+
+    prevAnswersMap['queriesObj'] = queriesObj;
+
+    // ---------------------------------------------------------------------------
+
+    ({ queryName } = await inquirer.prompt({
+      type: 'list',
+      name: 'queryName',
+      message: 'Which query would you like to execute?',
+      choices: Object.keys(queriesObj),
+      default: () => {
+        if (queryType === 'mutation') {
+          return 'orderCreate';
+        } else {
+          return 'getChat';
+        }
+      },
+    }));
+
+    queryParamArr = [
+      ...new Set(JSON.stringify(queriesObj[queryName]).match(/(\$)\w+/g)),
+    ];
+
+    prevAnswersMap['queryName'] = queryName;
+    prevAnswersMap['queryParamArr'] = queryParamArr;
+  }
+
+  // ---------------------------------------------------------------------------
+
+  const { newOrderNum, newProductNum, ...newParamObj } = await inquirer.prompt([
+    ...queryParamArr.map((queryParam) => ({
       type: 'input',
       name: `${queryParam.slice(1)}`,
       message: `Value for ${queryParam.slice(1)}?`,
-      when: (answers) => answers['askAgain'],
       default: () => {
-        if (/order/gi.test(queryParam)) {
-          return 'OrderInput - auto-generated';
-        } else if (/products/gi.test(queryParam)) {
-          return '[AdminProductInput] - auto-generated';
+        if (sameQuery) {
+          if (/order/gi.test(queryParam)) {
+            return 'OrderInput - auto-generated';
+          } else if (/products/gi.test(queryParam)) {
+            return '[AdminProductInput] - auto-generated';
+          } else {
+            return prevParamObj[queryParam.slice(1)];
+          }
         } else {
-          return prevParamObj[queryParam.slice(1)];
+          if (/id/gi.test(queryParam)) {
+            return uuid.v4();
+          } else if (/order/gi.test(queryParam)) {
+            return 'OrderInput - auto-generated';
+          } else if (/products/gi.test(queryParam)) {
+            return '[AdminProductInput] - auto-generated';
+          } else if (/product/gi.test(queryParam)) {
+            return defaultProduct;
+          } else if (/dryRun/gi.test(queryParam)) {
+            return false;
+          } else if (/message/gi.test(queryParam)) {
+            return defaultMessage;
+          } else if (/chat/gi.test(queryParam)) {
+            return defaultChat;
+          }
         }
       },
     })),
@@ -300,55 +245,95 @@ async function repeatQuery(
       name: 'newOrderNum',
       message: `How many products should the order contain?`,
       when: (newParamObj) => newParamObj['order'],
-      default: () => prevOrderNum,
+      default: () => {
+        if (sameQuery) {
+          return prevAnswersMap['orderNum'];
+        } else {
+          return Math.floor(Math.random() * 19 + 1);
+        }
+      },
     },
     {
       type: 'input',
       name: 'newProductNum',
       message: `How many products should the batchCreate contain?`,
       when: (newParamObj) => newParamObj['products'],
-      default: () => prevProductNum,
+      default: () => {
+        if (sameQuery) {
+          return prevAnswersMap['productNum'];
+        } else {
+          return Math.floor(Math.random() * 199 + 1);
+        }
+      },
     },
   ]);
 
+  if (!!newOrderNum) {
+    newParamObj['order'] = defaultOrder(parseInt(newOrderNum));
+
+    prevAnswersMap['orderNum'] = newOrderNum;
+  }
+
+  if (!!newProductNum) {
+    newParamObj['products'] = defaultProductArr(parseInt(newProductNum));
+
+    prevAnswersMap['productNum'] = newProductNum;
+  }
+
+  prevAnswersMap['paramObj'] = newParamObj;
+
   // ---------------------------------------------------------------------------
 
-  if (askAgain) {
-    if (!!newOrderNum) {
-      newParamObj['order'] = defaultOrder(parseInt(newOrderNum));
-    }
-
-    if (!!newProductNum) {
-      newParamObj['products'] = defaultProductArr(parseInt(newProductNum));
-    }
-
+  if (!sameQuery) {
     try {
-      const { stdout } = await exec(
-        cmdStrGenerator(
-          prevAnswersMap.get('userProfile'),
-          prevAnswersMap.get('queryName'),
-          newParamObj
-        )
+      await fs.writeFile(
+        `gqlQueries/${queryName}.graphql`,
+        `${queriesObj[queryName]}`
       );
-
-      let parsedResponse = JSON.stringify(JSON.parse(stdout), null, 2);
-
-      console.log(parsedResponse);
     } catch (err) {
       throw new Error(err);
     }
+  }
 
-    await repeatQuery(
-      cmdStrGenerator,
-      prevQueryParamArr,
-      newParamObj,
-      newOrderNum,
-      newProductNum,
-      prevAnswersMap
+  try {
+    const { stdout } = await exec(
+      cmdStrGen(prevAnswersMap['userProfile'], queryName, newParamObj)
     );
+
+    let parsedResponse = JSON.stringify(JSON.parse(stdout), null, 2);
+
+    console.log(parsedResponse);
+  } catch (err) {
+    throw new Error(err);
+  }
+
+  // ---------------------------------------------------------------------------
+  // REPEATING THE LOOP
+  // ---------------------------------------------------------------------------
+
+  const { askAgain, sameQueryUpdate } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'askAgain',
+      message: 'Do you want to run another query (default: YES)?',
+      default: true,
+    },
+    {
+      type: 'confirm',
+      name: 'sameQueryUpdate',
+      message: 'Do you want to run the same query again (default: YES)?',
+      when: (answers) => answers.askAgain,
+      default: true,
+    },
+  ]);
+
+  if (askAgain) {
+    await repeatQuery(prevAnswersMap, sameQueryUpdate);
   } else {
     console.log('Bye! 👋');
   }
 }
 
 main();
+
+// 8049abb1-7c38-40ed-aab7-6a47082f2d0a
