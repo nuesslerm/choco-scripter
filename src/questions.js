@@ -1,8 +1,6 @@
 const uuid = require('uuid');
 
 const {
-  defaultOrder,
-  defaultProductArr,
   defaultProduct,
   defaultMessage,
   defaultChat,

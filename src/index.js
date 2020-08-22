@@ -13,9 +13,6 @@ const { loadChocoConfig } = require('./loadChocoConfig');
 const {
   defaultOrder,
   defaultAdminProductArr,
-  defaultProduct,
-  defaultMessage,
-  defaultChat,
 } = require('./queryParamDefaults');
 const {
   ghOAuthQuestions,
