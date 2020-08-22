@@ -61,7 +61,12 @@ const authUrl = `https://github.com/login/oauth/authorize?client_id=${ghClientId
 // })();
 
 async function main() {
-  const { ghOAuth } = await inquirer.prompt(ghOAuthQuestions);
+  const { ghOAuth } = await inquirer.prompt({
+    type: 'confirm',
+    name: 'ghOAuth',
+    message: 'Do you want to load queries from GitHub (defaul: NO)?',
+    default: false,
+  });
 
   const answersMap = {};
   answersMap['ghOAuth'] = ghOAuth;
@@ -82,7 +87,12 @@ async function main() {
 
   // ---------------------------------------------------------------------------
 
-  const { environment } = await inquirer.prompt(environmentQuestions(stageSet));
+  const { environment } = await inquirer.prompt({
+    type: 'list',
+    name: 'environment',
+    message: 'Which environment would you like to use?',
+    choices: [...stageSet],
+  });
 
   answersMap['environment'] = environment;
 
@@ -96,7 +106,12 @@ async function main() {
 
   // ---------------------------------------------------------------------------
 
-  const { userType } = await inquirer.prompt(userTypeQuestions(userTypeSet));
+  const { userType } = await inquirer.prompt({
+    type: 'list',
+    name: 'userType',
+    message: 'Which userType would you like to use?',
+    choices: [...userTypeSet],
+  });
 
   answersMap['userType'] = userType;
 
@@ -116,9 +131,14 @@ async function main() {
 
   // ---------------------------------------------------------------------------
 
-  const { userProfile: userProfileStrArr } = await inquirer.prompt(
-    userProfileQuestions(userProfileSet)
-  );
+  const { userProfile: userProfileStrArr } = await inquirer.prompt({
+    type: 'list',
+    name: 'userProfile',
+    message: 'Which profile would you like to use?',
+    choices: [...userProfileSet].map(
+      (profile) => `${profile.key}: ${profile.userIdentifier}`
+    ),
+  });
 
   userProfile = userProfileStrArr.split(': ')[0];
 
@@ -153,7 +173,17 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
   } = prevAnswersMap;
 
   if (!sameQuery) {
-    const { queryType } = await inquirer.prompt(queryTypeQuestions);
+    const { queryType } = await inquirer.prompt({
+      type: 'list',
+      name: 'queryType',
+      default: 'Query',
+      message: 'What do you want to do?',
+      choices: ['Mutation', 'Query'],
+      default: 'Mutation',
+      filter: function (val) {
+        return val.toLowerCase();
+      },
+    });
 
     const allEntries = await loadQueriesFromStore();
 
@@ -163,9 +193,19 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
 
     // ---------------------------------------------------------------------------
 
-    ({ queryName } = await inquirer.prompt(
-      queryNameQuestions(queryType, queriesObj)
-    ));
+    ({ queryName } = await inquirer.prompt({
+      type: 'list',
+      name: 'queryName',
+      message: 'Which query would you like to execute?',
+      choices: Object.keys(queriesObj),
+      default: () => {
+        if (queryType === 'mutation') {
+          return 'orderCreate';
+        } else {
+          return 'getChat';
+        }
+      },
+    }));
 
     queryParamArr = [
       ...new Set(JSON.stringify(queriesObj[queryName]).match(/(\$)\w+/g)),
@@ -264,6 +304,8 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
       throw new Error(err);
     }
   }
+
+  console.log(cmdStrGen(prevAnswersMap['userProfile'], queryName, newParamObj));
 
   try {
     const { stdout } = await exec(
