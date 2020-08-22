@@ -106,6 +106,7 @@ inquirer
               ),
             ];
 
+            globalaAnswersMap.set('queryName', queryName);
             globalaAnswersMap.set('queryParamArr', queryParamArr);
 
             inquirer
@@ -149,11 +150,11 @@ inquirer
               ])
               // -------------------------------------------------------------------
               .then(async ({ orderNum, productNum, ...paramObj }) => {
-                if (orderNum) {
+                if (!!orderNum) {
                   paramObj['order'] = defaultOrder(parseInt(orderNum));
                 }
 
-                if (productNum) {
+                if (!!productNum) {
                   paramObj['products'] = defaultProductArr(
                     parseInt(productNum)
                   );
@@ -274,7 +275,6 @@ inquirer
                             );
 
                             // 8049abb1-7c38-40ed-aab7-6a47082f2d0a
-                            // choco -p admin run -d gqlQueries/getChat.graphql -v '{"id":"8049abb1-7c38-40ed-aab7-6a47082f2d0a"}'
                           });
                       });
                   });
@@ -304,7 +304,6 @@ function repeatQuery(
         name: `${queryParam.slice(1)}`,
         message: `Value for ${queryParam.slice(1)}?`,
         when: (answers) => answers['askAgain'],
-        // default: () => prevAnswersMap.get('paramObj')[queryParam.slice(1)],
         default: () => {
           if (/order/gi.test(queryParam)) {
             return 'OrderInput - auto-generated';
@@ -317,14 +316,14 @@ function repeatQuery(
       })),
       {
         type: 'input',
-        name: 'orderNum',
+        name: 'newOrderNum',
         message: `How many products should the order contain?`,
         when: (newParamObj) => newParamObj['order'],
         default: () => prevOrderNum,
       },
       {
         type: 'input',
-        name: 'productNum',
+        name: 'newProductNum',
         message: `How many products should the batchCreate contain?`,
         when: (newParamObj) => newParamObj['products'],
         default: () => prevProductNum,
@@ -333,15 +332,13 @@ function repeatQuery(
     // -------------------------------------------------------------------------
     .then(async ({ askAgain, newOrderNum, newProductNum, ...newParamObj }) => {
       if (askAgain) {
-        if (newOrderNum) {
+        if (!!newOrderNum) {
           newParamObj['order'] = defaultOrder(parseInt(newOrderNum));
         }
 
-        if (newProductNum) {
+        if (!!newProductNum) {
           newParamObj['products'] = defaultProductArr(parseInt(newProductNum));
         }
-
-        console.log(newParamObj);
 
         try {
           const { stdout } = await exec(

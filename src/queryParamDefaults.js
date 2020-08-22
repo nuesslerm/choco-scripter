@@ -1,29 +1,41 @@
 const uuid = require('uuid');
+const _ = require('lodash');
 
-const defaultOrder = (num) => ({
-  body: `Order ${Date.now()}`,
-  deliveryDate: 1600002000000,
-  orderProducts: [...Array(num)].map(() => ({
-    amount: Math.floor(Math.random() * 19 + 1),
-    product: {
-      id: uuid.v4(),
-      name: `product ${uuid.v4()}`,
-      unit: 'kg',
-    },
-  })),
-});
+const defaultOrder = (num) => {
+  if (num <= 0) num = 1;
+  return {
+    body: `Order ${Date.now()}`,
+    deliveryDate: Date.now(),
+    orderProducts: [...Array(num)].map((product, i) => ({
+      amount: Math.floor(Math.random() * 19 + 1),
+      product: {
+        id: uuid.v4(),
+        name: `Product #${i + 1}`,
+        unit: _.sample(['kg', 'litre', 'case', 'CA', 'box']),
+        externalId: `${uuid.v4().slice(0, 6)}`,
+        par: Math.floor(Math.random() * 19 + 19),
+      },
+    })),
+  };
+};
 
-const defaultProductArr = (num) =>
-  [...Array(num)].map(() => ({
+const defaultProductArr = (num) => {
+  if (num <= 0) num = 1;
+  [...Array(num)].map((product, i) => ({
     id: uuid.v4(),
-    name: `product ${uuid.v4()}`,
-    unit: 'kg',
+    name: `Product #${i + 1}`,
+    unit: _.sample(['kg', 'litre', 'case', 'CA', 'box']),
+    externalId: `${uuid.v4().slice(0, 6)}`,
+    par: Math.floor(Math.random() * 19 + 19),
   }));
+};
 
 const defaultProduct = {
   id: uuid.v4(),
-  name: `product ${uuid.v4()}`,
-  unit: 'kg',
+  name: `Product ${uuid.v4().slice(0, 5)}`,
+  unit: _.sample(['kg', 'litre', 'case', 'CA', 'box']),
+  externalId: `${uuid.v4().slice(0, 6)}`,
+  par: Math.floor(Math.random() * 19 + 19),
 };
 
 const defaultMessage = {
