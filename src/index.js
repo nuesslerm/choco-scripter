@@ -58,8 +58,8 @@ async function main() {
     default: false,
   });
 
-  let globalaAnswersMap = new Map();
-  globalaAnswersMap.set('ghOAuth', ghOAuth);
+  const answersMap = {};
+  answersMap['ghOAuth'] = ghOAuth;
 
   // launching the browser and accessing github OAuth
 
@@ -92,7 +92,7 @@ async function main() {
     }
   }
 
-  globalaAnswersMap.set('environment', environment);
+  answersMap['environment'] = environment;
 
   // ---------------------------------------------------------------------------
 
@@ -117,7 +117,7 @@ async function main() {
     }
   }
 
-  globalaAnswersMap.set('userType', userType);
+  answersMap['userType'] = userType;
 
   // ---------------------------------------------------------------------------
 
@@ -132,20 +132,13 @@ async function main() {
 
   userProfile = userProfileStrArr.split(': ')[0];
 
-  globalaAnswersMap.set('userProfile', userProfile);
+  answersMap['userProfile'] = userProfile;
 
   // ---------------------------------------------------------------------------
   // START OF RECURSIVE PART
   // ---------------------------------------------------------------------------
 
-  await repeatQuery(
-    cmdStrGen,
-    queryParamArr,
-    paramObj,
-    orderNum,
-    productNum,
-    globalaAnswersMap
-  );
+  await repeatQuery(answersMap, true);
 
   // 8049abb1-7c38-40ed-aab7-6a47082f2d0a
 }
@@ -167,8 +160,7 @@ async function repeatQuery(
   prevOrderNum,
   prevProductNum,
   prevAnswersMap,
-  cmdStrGenerator,
-  firstRun = true
+  firstRun
 ) {
   let askAgain = false;
   let sameQuery = true;
@@ -210,7 +202,7 @@ async function repeatQuery(
 
     const queriesObj = allEntries[queryType];
 
-    globalaAnswersMap.set('queriesObj', queriesObj);
+    prevAnswersMap['queriesObj'] = queriesObj;
 
     // ---------------------------------------------------------------------------
 
@@ -232,8 +224,8 @@ async function repeatQuery(
       ...new Set(JSON.stringify(queriesObj[queryName]).match(/(\$)\w+/g)),
     ];
 
-    globalaAnswersMap.set('queryName', queryName);
-    globalaAnswersMap.set('queryParamArr', queryParamArr);
+    prevAnswersMap['queryName'] = queryName;
+    prevAnswersMap['queryParamArr'] = queryParamArr;
   }
 
   // ---------------------------------------------------------------------------
@@ -308,9 +300,9 @@ async function repeatQuery(
     newParamObj['products'] = defaultProductArr(parseInt(newProductNum));
   }
 
-  globalaAnswersMap.set('orderNum', newOrderNum);
-  globalaAnswersMap.set('productNum', newProductNum);
-  globalaAnswersMap.set('paramObj', newParamObj);
+  prevAnswersMap['orderNum'] = newOrderNum;
+  prevAnswersMap['productNum'] = newProductNum;
+  prevAnswersMap['paramObj'] = newParamObj;
 
   // ---------------------------------------------------------------------------
 
@@ -336,13 +328,15 @@ async function repeatQuery(
   }
 
   // ---------------------------------------------------------------------------
+  // REPEATING THE LOOP
+  // ---------------------------------------------------------------------------
 
   if (askAgain) {
     try {
       const { stdout } = await exec(
         cmdStrGenerator(
-          prevAnswersMap.get('userProfile'),
-          prevAnswersMap.get('queryName'),
+          prevAnswersMap['userProfile'],
+          prevAnswersMap['queryName'],
           newParamObj
         )
       );
@@ -360,7 +354,6 @@ async function repeatQuery(
       newOrderNum,
       newProductNum,
       prevAnswersMap,
-      cmdStrGenerator,
       false
     );
   } else {
