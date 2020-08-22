@@ -1,3 +1,5 @@
+const uuid = require('uuid');
+
 const {
   defaultOrder,
   defaultProductArr,
@@ -62,7 +64,12 @@ const queryNameQuestions = (queryType, queriesObj) => ({
   },
 });
 
-const paramObjQuestions = (queryParamArr, sameQuery, prevParamObj) => [
+const paramObjQuestions = (
+  queryParamArr,
+  sameQuery,
+  prevParamObj,
+  prevAnswersMap
+) => [
   ...queryParamArr.map((queryParam) => ({
     type: 'input',
     name: `${queryParam.slice(1)}`,

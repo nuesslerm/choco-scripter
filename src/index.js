@@ -3,7 +3,7 @@ inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 
 const fs = require('fs-extra');
 const opn = require('opn');
-const uuid = require('uuid');
+
 const exec = require('await-exec');
 
 const { loadGhQueries } = require('../server/loadGhQueries');
@@ -12,7 +12,7 @@ const { loadQueriesFromStore } = require('./loadQueriesFromStore');
 const { loadChocoConfig } = require('./loadChocoConfig');
 const {
   defaultOrder,
-  defaultProductArr,
+  defaultAdminProductArr,
   defaultProduct,
   defaultMessage,
   defaultChat,
@@ -177,66 +177,9 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
 
   // ---------------------------------------------------------------------------
 
-  const { newOrderNum, newProductNum, ...newParamObj } = await inquirer.prompt([
-    ...queryParamArr.map((queryParam) => ({
-      type: 'input',
-      name: `${queryParam.slice(1)}`,
-      message: `Value for ${queryParam.slice(1)}?`,
-      default: () => {
-        if (sameQuery) {
-          if (/order/gi.test(queryParam)) {
-            return 'OrderInput - auto-generated';
-          } else if (/products/gi.test(queryParam)) {
-            return '[AdminProductInput] - auto-generated';
-          } else {
-            return prevParamObj[queryParam.slice(1)];
-          }
-        } else {
-          if (/id/gi.test(queryParam)) {
-            return uuid.v4();
-          } else if (/order/gi.test(queryParam)) {
-            return 'OrderInput - auto-generated';
-          } else if (/products/gi.test(queryParam)) {
-            return '[AdminProductInput] - auto-generated';
-          } else if (/product/gi.test(queryParam)) {
-            return defaultProduct;
-          } else if (/dryRun/gi.test(queryParam)) {
-            return false;
-          } else if (/message/gi.test(queryParam)) {
-            return defaultMessage;
-          } else if (/chat/gi.test(queryParam)) {
-            return defaultChat;
-          }
-        }
-      },
-    })),
-    {
-      type: 'input',
-      name: 'newOrderNum',
-      message: `How many products should the order contain?`,
-      when: (newParamObj) => newParamObj['order'],
-      default: () => {
-        if (sameQuery) {
-          return prevAnswersMap['orderNum'];
-        } else {
-          return Math.floor(Math.random() * 19 + 1);
-        }
-      },
-    },
-    {
-      type: 'input',
-      name: 'newProductNum',
-      message: `How many products should the batchCreate contain?`,
-      when: (newParamObj) => newParamObj['products'],
-      default: () => {
-        if (sameQuery) {
-          return prevAnswersMap['productNum'];
-        } else {
-          return Math.floor(Math.random() * 199 + 1);
-        }
-      },
-    },
-  ]);
+  const { newOrderNum, newProductNum, ...newParamObj } = await inquirer.prompt(
+    paramObjQuestions(queryParamArr, sameQuery, prevParamObj, prevAnswersMap)
+  );
 
   if (!!newOrderNum) {
     newParamObj['order'] = defaultOrder(parseInt(newOrderNum));
@@ -245,10 +188,12 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
   }
 
   if (!!newProductNum) {
-    newParamObj['products'] = defaultProductArr(parseInt(newProductNum));
+    newParamObj['products'] = defaultAdminProductArr(parseInt(newProductNum));
 
     prevAnswersMap['productNum'] = newProductNum;
   }
+
+  console.log(newParamObj['products']);
 
   prevAnswersMap['paramObj'] = newParamObj;
 
@@ -281,21 +226,9 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
   // REPEATING THE LOOP
   // ---------------------------------------------------------------------------
 
-  const { askAgain, sameQueryUpdate } = await inquirer.prompt([
-    {
-      type: 'confirm',
-      name: 'askAgain',
-      message: 'Do you want to run another query (default: YES)?',
-      default: true,
-    },
-    {
-      type: 'confirm',
-      name: 'sameQueryUpdate',
-      message: 'Do you want to run the same query again (default: YES)?',
-      when: (answers) => answers.askAgain,
-      default: true,
-    },
-  ]);
+  const { askAgain, sameQueryUpdate } = await inquirer.prompt(
+    askAgainQuestions
+  );
 
   if (askAgain) {
     await repeatQuery(prevAnswersMap, sameQueryUpdate);
