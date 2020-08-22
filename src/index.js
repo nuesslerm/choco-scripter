@@ -156,14 +156,11 @@ const cmdStrGen = (userProfileIn, queryNameIn, paramObjIn) =>
 
 async function repeatQuery(prevAnswersMap, sameQuery) {
   let {
-    queryParamArr: prevQueryParamArr,
+    queriesObj,
+    queryName,
+    queryParamArr,
     paramObj: prevParamObj,
-    orderNum: prevOrderNum,
-    productNum: prevProductNum,
   } = prevAnswersMap;
-
-  // console.log(prevAnswersMap, sameQuery);
-  // console.log(prevQueryParamArr, prevParamObj, prevOrderNum, prevProductNum);
 
   if (!sameQuery) {
     const { queryType } = await inquirer.prompt({
@@ -180,13 +177,13 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
 
     const allEntries = await loadQueriesFromStore();
 
-    const queriesObj = allEntries[queryType];
+    queriesObj = allEntries[queryType];
 
     prevAnswersMap['queriesObj'] = queriesObj;
 
     // ---------------------------------------------------------------------------
 
-    const { queryName } = await inquirer.prompt({
+    ({ queryName } = await inquirer.prompt({
       type: 'list',
       name: 'queryName',
       message: 'Which query would you like to execute?',
@@ -198,22 +195,20 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
           return 'getChat';
         }
       },
-    });
+    }));
 
-    const newQueryParamArr = [
+    queryParamArr = [
       ...new Set(JSON.stringify(queriesObj[queryName]).match(/(\$)\w+/g)),
     ];
 
-    console.log(newQueryParamArr);
-
     prevAnswersMap['queryName'] = queryName;
-    prevAnswersMap['queryParamArr'] = newQueryParamArr;
+    prevAnswersMap['queryParamArr'] = queryParamArr;
   }
 
   // ---------------------------------------------------------------------------
 
   const { newOrderNum, newProductNum, ...newParamObj } = await inquirer.prompt([
-    ...prevAnswersMap['queryParamArr'].map((queryParam) => ({
+    ...queryParamArr.map((queryParam) => ({
       type: 'input',
       name: `${queryParam.slice(1)}`,
       message: `Value for ${queryParam.slice(1)}?`,
@@ -224,7 +219,7 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
           } else if (/products/gi.test(queryParam)) {
             return '[AdminProductInput] - auto-generated';
           } else {
-            return prevAnswersMap['paramObj'][queryParam.slice(1)];
+            return prevParamObj[queryParam.slice(1)];
           }
         } else {
           if (/id/gi.test(queryParam)) {
@@ -275,14 +270,16 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
 
   if (!!newOrderNum) {
     newParamObj['order'] = defaultOrder(parseInt(newOrderNum));
+
+    prevAnswersMap['orderNum'] = newOrderNum;
   }
 
   if (!!newProductNum) {
     newParamObj['products'] = defaultProductArr(parseInt(newProductNum));
+
+    prevAnswersMap['productNum'] = newProductNum;
   }
 
-  prevAnswersMap['orderNum'] = newOrderNum;
-  prevAnswersMap['productNum'] = newProductNum;
   prevAnswersMap['paramObj'] = newParamObj;
 
   // ---------------------------------------------------------------------------
@@ -290,8 +287,8 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
   if (!sameQuery) {
     try {
       await fs.writeFile(
-        `gqlQueries/${prevAnswersMap['queryName']}.graphql`,
-        `${prevAnswersMap['queriesObj'][prevAnswersMap['queryName']]}`
+        `gqlQueries/${queryName}.graphql`,
+        `${queriesObj[queryName]}`
       );
     } catch (err) {
       throw new Error(err);
@@ -300,11 +297,7 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
 
   try {
     const { stdout } = await exec(
-      cmdStrGen(
-        prevAnswersMap['userProfile'],
-        prevAnswersMap['queryName'],
-        newParamObj
-      )
+      cmdStrGen(prevAnswersMap['userProfile'], queryName, newParamObj)
     );
 
     let parsedResponse = JSON.stringify(JSON.parse(stdout), null, 2);
@@ -322,7 +315,7 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
     {
       type: 'confirm',
       name: 'askAgain',
-      message: 'Do you want to run the query again (default: YES)?',
+      message: 'Do you want to run another query (default: YES)?',
       default: true,
     },
     {
