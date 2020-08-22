@@ -174,14 +174,14 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
 
   // ---------------------------------------------------------------------------
 
-  const { newOrderNum, newProductNum, ...newParamObj } = await inquirer.prompt(
+  const { newOrderNums, newProductNum, ...newParamObj } = await inquirer.prompt(
     paramObjQuestions(queryParamArr, sameQuery, prevParamObj, prevAnswersMap)
   );
 
-  if (!!newOrderNum) {
-    newParamObj['order'] = defaultOrder(parseInt(newOrderNum));
+  if (!!newOrderNums) {
+    newParamObj['order'] = defaultOrder(parseInt(newOrderNums));
 
-    prevAnswersMap['orderNum'] = newOrderNum;
+    prevAnswersMap['orderNums'] = newOrderNums;
   }
 
   if (!!newProductNum) {
@@ -189,8 +189,6 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
 
     prevAnswersMap['productNum'] = newProductNum;
   }
-
-  console.log(newParamObj['products']);
 
   prevAnswersMap['paramObj'] = newParamObj;
 
