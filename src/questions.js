@@ -10,28 +10,28 @@ const {
 const ghOAuthQuestions = {
   type: 'confirm',
   name: 'ghOAuth',
-  message: 'Do you want to load queries from GitHub (defaul: NO)?',
+  message: 'Do you want to load queries from GitHub (defaul: NO)? 🎁',
   default: false,
 };
 
 const environmentQuestions = (stageSet) => ({
   type: 'list',
   name: 'environment',
-  message: 'Which environment would you like to use?',
+  message: 'Which environment would you like to use? 🌍',
   choices: [...stageSet],
 });
 
 const userTypeQuestions = (userTypeSet) => ({
   type: 'list',
   name: 'userType',
-  message: 'Which userType would you like to use?',
+  message: 'Which userType would you like to use? 🙋‍♀️',
   choices: [...userTypeSet],
 });
 
 const userProfileQuestions = (userProfileSet) => ({
   type: 'list',
   name: 'userProfile',
-  message: 'Which profile would you like to use?',
+  message: 'Which profile would you like to use? 📚',
   pageSize: 10,
   choices: [...userProfileSet]
     .map((profile) => `${profile.key}: ${profile.userIdentifier}`)
@@ -42,7 +42,7 @@ const queryTypeQuestions = {
   type: 'list',
   name: 'queryType',
   default: 'Query',
-  message: 'What do you want to do?',
+  message: 'What do you want to do? 🤸‍♀️',
   choices: ['Mutation', 'Query'],
   default: 'Mutation',
   filter: function (val) {
@@ -53,7 +53,7 @@ const queryTypeQuestions = {
 const queryNameQuestions = (queryType, queriesObj) => ({
   type: 'list',
   name: 'queryName',
-  message: 'Which query would you like to execute?',
+  message: 'Which query would you like to execute? 🤔',
   pageSize: 10,
   choices: Object.keys(queriesObj).concat(new inquirer.Separator()),
   default: () => {
@@ -119,7 +119,7 @@ const paramObjQuestions = (
   {
     type: 'checkbox',
     name: 'newOrderNums',
-    message: `How many products should the order contain?`,
+    message: `How many products should the order contain? 📦`,
     pageSize: 20,
     choices: [
       1,
@@ -168,7 +168,7 @@ const paramObjQuestions = (
   {
     type: 'input',
     name: 'newProductNum',
-    message: `How many products should the batchCreate contain?`,
+    message: `How many products should the batchCreate contain? 🎬`,
     when: (newParamObj) => newParamObj['products'],
     default: () => {
       if (sameQuery) {
@@ -184,13 +184,13 @@ const askAgainQuestions = [
   {
     type: 'confirm',
     name: 'askAgain',
-    message: 'Do you want to run another query (default: YES)?',
+    message: 'Do you want to run another query (default: YES)? 💪',
     default: true,
   },
   {
     type: 'confirm',
     name: 'sameQueryUpdate',
-    message: 'Do you want to run the same query again (default: YES)?',
+    message: 'Do you want to run the same query again (default: YES)? 📣',
     when: (answers) => answers.askAgain,
     default: true,
   },
