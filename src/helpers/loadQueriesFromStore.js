@@ -1,8 +1,16 @@
 const fs = require('fs-extra');
+const path = require('path');
+
+const appDir = path.dirname(require.main.filename);
+
+const databasePath = appDir + '/../database';
 
 const loadQueriesFromStore = async () => {
   try {
-    const response = await fs.readFile('database/queriesStore.db', 'utf-8');
+    const response = await fs.readFile(
+      `${databasePath}/queriesStore.db`,
+      'utf-8'
+    );
 
     const allMutations = {};
     const allQueries = {};
