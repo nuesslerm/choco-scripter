@@ -28,7 +28,7 @@ const userTypeQuestions = (userTypeSet) => ({
   choices: [...userTypeSet],
 });
 
-const userProfileQuestions = (userProfileSet) => ({
+const userProfileQuestions = (userType, userProfileSet) => ({
   type: 'list',
   name: 'userProfile',
   message: 'Which profile would you like to use? 📚',
@@ -36,6 +36,13 @@ const userProfileQuestions = (userProfileSet) => ({
   choices: [...userProfileSet]
     .map((profile) => `${profile.key}: ${profile.userIdentifier}`)
     .concat(userProfileSet.size >= 10 ? new inquirer.Separator() : []),
+  default: () => {
+    if (userType === 'admin') {
+      return 'admin: Markus';
+    } else if (userType === 'customer') {
+      return 'de-DE Restaurant User: +4930967711750';
+    }
+  },
 });
 
 const queryTypeQuestions = {

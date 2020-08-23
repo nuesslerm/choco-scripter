@@ -145,7 +145,7 @@ async function main() {
   // ---------------------------------------------------------------------------
 
   const { userProfile: userProfileStrArr } = await inquirer.prompt(
-    userProfileQuestions(userProfileSet)
+    userProfileQuestions(userType, userProfileSet)
   );
 
   userProfile = userProfileStrArr.split(': ')[0];
