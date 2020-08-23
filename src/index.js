@@ -218,24 +218,6 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
 
   try {
     if (!!newOrderParamObjArr.length) {
-      // await (function placeOrderWithDelay(i, delay) {
-      //   setTimeout(async function () {
-      //     // placing an order
-      //     const { stdout } = await exec(
-      //       cmdStrGen(
-      //         prevAnswersMap['userProfile'],
-      //         queryName,
-      //         newOrderParamObjArr[i]
-      //       )
-      //     );
-      //     // console.logging response from BE
-      //     console.log(JSON.stringify(JSON.parse(stdout), null, 2));
-      //     // decrement i and call loop again if i > 0
-      //     if (++i < newOrderParamObjArr.length)
-      //       await placeOrderWithDelay(i, delay);
-      //   }, delay);
-      // })(0, 1000);
-
       for (let orderParamObj of newOrderParamObjArr) {
         // placing an order
         const { stdout } = await exec(
