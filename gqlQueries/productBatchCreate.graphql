@@ -1,7 +1,0 @@
-mutation productBatchCreate(
-  $chatId: ID!
-  $products: [AdminProductInput!]!
-  $dryRun: Boolean
-) {
-  productBatchCreate(chatId: $chatId, products: $products, dryRun: $dryRun)
-}
