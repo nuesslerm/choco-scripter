@@ -72,9 +72,9 @@ async function main() {
         accessToken = await getAccessTokenFromDB();
       }
 
-      server.close(() => {
-        // console.log('Http server closed.');
-      });
+      // server.close(() => {
+      //   // console.log('Http server closed.');
+      // });
     } else {
       console.log('accessToken already exists!');
     }

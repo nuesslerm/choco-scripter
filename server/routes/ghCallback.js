@@ -15,9 +15,13 @@ router.get('/', async (req, res, next) => {
 
   await loadAccessToken(code);
 
-  res.send({
-    success: true,
-    message: 'AccessToken fetched!',
+  // res.send({
+  //   success: true,
+  //   message: 'AccessToken fetched!',
+  // });
+  res.render('index', {
+    title: 'Successfully retrieved GH queries. 💪',
+    body: 'You can close this page and return to the terminal! 💻',
   });
 });
 
