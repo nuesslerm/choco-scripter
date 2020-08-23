@@ -15,7 +15,7 @@ const loadQueriesFromStore = async () => {
           const name = subEntry.name && subEntry.name.replace('.graphql', '');
           allMutations[name] = subEntry.object.text;
         });
-      } else {
+      } else if (entry.name === 'query') {
         entry.object.entries.map((subEntry) => {
           const name = subEntry.name && subEntry.name.replace('.graphql', '');
           allQueries[name] = subEntry.object.text;
@@ -25,7 +25,7 @@ const loadQueriesFromStore = async () => {
 
     return { mutation: allMutations, query: allQueries };
   } catch (err) {
-    if (err) throw err;
+    return null;
   }
 };
 

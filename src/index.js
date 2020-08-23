@@ -56,28 +56,43 @@ async function main() {
   // the rest will be handled by the express server
 
   if (ghOAuth) {
+    const server = app.listen(port, () => {
+      // console.log(`Example app listening at http://localhost:${port}`);
+      console.log('Loading...');
+    });
+
     let accessToken = await getAccessTokenFromDB();
 
     if (!accessToken) {
-      const server = app.listen(port, () => {
-        // console.log(`Example app listening at http://localhost:${port}`);
-        console.log('Loading...');
-      });
-
       await wait(1000);
       await open(ghOAuthUrl);
 
       while (!accessToken) {
         await wait(2000);
+
         accessToken = await getAccessTokenFromDB();
       }
-
-      // server.close(() => {
-      //   // console.log('Http server closed.');
-      // });
-    } else {
-      console.log('accessToken already exists!');
     }
+
+    try {
+      await fs.remove('database/queriesStore.db');
+    } catch (err) {
+      throw new Error(err);
+    }
+
+    // get new gqlQueries here
+
+    let allEntries = await loadQueriesFromStore();
+
+    while (!allEntries) {
+      await wait(2000);
+
+      allEntries = await loadQueriesFromStore();
+    }
+
+    server.close(() => {
+      // console.log('Http server closed.');
+    });
   }
 
   // ---------------------------------------------------------------------------
