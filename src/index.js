@@ -148,6 +148,7 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
     queryParamArr,
     paramObj: prevParamObj,
   } = prevAnswersMap;
+  const newOrderParamObjArr = [];
 
   if (!sameQuery) {
     const { queryType } = await inquirer.prompt(queryTypeQuestions);
@@ -178,8 +179,21 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
     paramObjQuestions(queryParamArr, sameQuery, prevParamObj, prevAnswersMap)
   );
 
+  console.log(newOrderNums);
+
   if (!!newOrderNums) {
-    newParamObj['order'] = defaultOrder(parseInt(newOrderNums));
+    let { order, ...rest } = newParamObj;
+
+    for (let orderNum of newOrderNums) {
+      newOrderParamObjArr.push({
+        ...rest,
+        order: defaultOrder(parseInt(orderNum)),
+      });
+
+      // console.log(
+      //   newOrderParamObjArr /* newOrderParamObjArr[0].order.orderProducts */
+      // );
+    }
 
     prevAnswersMap['orderNums'] = newOrderNums;
   }
@@ -206,13 +220,25 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
   }
 
   try {
-    const { stdout } = await exec(
-      cmdStrGen(prevAnswersMap['userProfile'], queryName, newParamObj)
-    );
+    if (!!newOrderParamObjArr.length) {
+      for (let orderParamObj of newOrderParamObjArr) {
+        const { stdout } = await exec(
+          cmdStrGen(prevAnswersMap['userProfile'], queryName, orderParamObj)
+        );
 
-    let parsedResponse = JSON.stringify(JSON.parse(stdout), null, 2);
+        let parsedResponse = JSON.stringify(JSON.parse(stdout), null, 2);
 
-    console.log(parsedResponse);
+        console.log(parsedResponse);
+      }
+    } else {
+      const { stdout } = await exec(
+        cmdStrGen(prevAnswersMap['userProfile'], queryName, newParamObj)
+      );
+
+      let parsedResponse = JSON.stringify(JSON.parse(stdout), null, 2);
+
+      console.log(parsedResponse);
+    }
   } catch (err) {
     throw new Error(err);
   }
