@@ -4,6 +4,7 @@ inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 const fs = require('fs-extra');
 const exec = require('await-exec');
 const open = require('open');
+const fetch = require('node-fetch');
 
 const { loadGhQueries } = require('../server/helpers/loadGhQueries');
 const db = require('../server/db');
@@ -74,6 +75,13 @@ async function main() {
     });
     await wait(1000);
     await open(ghOAuthUrl);
+
+    await (async function callServer() {
+      let res = await fetch(`http://localhost:${port}/oauth/github/callback`);
+      let data = res.text();
+      console.log(data);
+    })();
+
     // await loadGhQueries();
     server.close(() => {
       console.log('Http server closed.');
