@@ -1,5 +1,5 @@
 const axios = require('axios');
-const db = require('./db');
+const db = require('../db');
 
 const gqlDocsQuery = `query {
   organization(login: "chocoapp") {
@@ -27,13 +27,13 @@ const gqlDocsQuery = `query {
   }
 }`;
 
-const loadAccessToken = async () =>
+const getAccessTokenFromDB = async () =>
   await db.gitHubStore.findOne({}, (err) => {
     if (err) throw err;
   });
 
 const loadGhQueries = async () => {
-  const accessToken = await loadAccessToken();
+  const accessToken = await getAccessTokenFromDB();
 
   if (!accessToken) return null;
 
@@ -45,7 +45,14 @@ const loadGhQueries = async () => {
 
   console.log(response.data.data.organization.repository.content.entries);
 
-  return response.data.data.organization.repository.content.entries;
+  await db.queriesStore.insert(
+    { queries: response.data.data.organization.repository.content.entries },
+    (err) => {
+      if (err) throw err;
+    }
+  );
+
+  // return response.data.data.organization.repository.content.entries;
 };
 
 module.exports = { loadGhQueries };

@@ -30,10 +30,9 @@
     "inquirer": "^7.3.3",
     "inquirer-recursive": "^0.0.6",
     "lodash": "^4.17.20",
-    "nedb": "^1.8.0",
-    "nedb-promise": "^2.0.1",
+    "morgan": "^1.10.0",
     "nedb-promises": "^4.0.4",
-    "opn": "^6.0.0",
+    "open": "^7.2.0",
     "query-string": "^6.13.1",
     "uuid": "^8.3.0",
     "yargs": "^15.4.1"

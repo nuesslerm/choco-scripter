@@ -2,10 +2,10 @@ const inquirer = require('inquirer');
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 
 const fs = require('fs-extra');
-const opn = require('opn');
 const exec = require('await-exec');
+const open = require('open');
 
-const { loadGhQueries } = require('../server/loadGhQueries');
+const { loadGhQueries } = require('../server/helpers/loadGhQueries');
 const db = require('../server/db');
 const { loadQueriesFromStore } = require('./helpers/loadQueriesFromStore');
 const { loadChocoConfig } = require('./helpers/loadChocoConfig');
@@ -25,6 +25,10 @@ const {
 } = require('./questions');
 const { cmdStrGen, wait } = require('./helpers/misc');
 
+// server entry point
+const app = require('../server/app');
+
+// loading in environment variables
 const dotenv = require('dotenv');
 dotenv.config();
 
@@ -37,12 +41,9 @@ dotenv.config();
 
 const ghClientId = process.env.GH_CLIENT_ID;
 const ghClientSecret = process.env.GH_CLIENT_SECRET;
+const port = process.env.PORT;
 
-const authUrl = `https://github.com/login/oauth/authorize?client_id=${ghClientId}&scope=repo%20read:org`;
-
-// opn(authUrl) will redirect to /oauth/github/callback so the rest will be handled by the express server
-
-// opn(authUrl);
+const ghOAuthUrl = `https://github.com/login/oauth/authorize?client_id=${ghClientId}&scope=repo%20read:org`;
 
 // db.queriesStore.insert({ queries: data }, (err) => {
 //   if (err) throw err;
@@ -63,7 +64,21 @@ async function main() {
   const answersMap = {};
   answersMap['ghOAuth'] = ghOAuth;
 
-  // launching the browser and accessing github OAuth
+  // launching the browser and accessing github OAuth via /oauth/github/callback
+  // the rest will be handled by the express server
+
+  if (ghOAuth) {
+    const server = app.listen(port, () => {
+      // console.log(`Example app listening at http://localhost:${port}`);
+      console.log('Loading...');
+    });
+    await wait(1000);
+    await open(ghOAuthUrl);
+    // await loadGhQueries();
+    server.close(() => {
+      console.log('Http server closed.');
+    });
+  }
 
   // ---------------------------------------------------------------------------
 
