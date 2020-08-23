@@ -3,10 +3,15 @@ const db = require('../db');
 // querystring is used to stringify and parse objects into/from REST request/response data
 const querystring = require('querystring');
 
+// loading in environment variables (needs to be loaded into every file where they are used?)
+const dotenv = require('dotenv');
+dotenv.config();
+
 const ghClientId = process.env.GH_CLIENT_ID;
 const ghClientSecret = process.env.GH_CLIENT_SECRET;
 
 const loadAccessToken = async (code) => {
+  console.log("I'm here");
   const postData = querystring.stringify({
     client_id: ghClientId,
     client_secret: ghClientSecret,

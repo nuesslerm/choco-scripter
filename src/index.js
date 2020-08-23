@@ -25,6 +25,7 @@ const {
   askAgainQuestions,
 } = require('./questions');
 const { cmdStrGen, wait } = require('./helpers/misc');
+const getAccessTokenFromDB = require('../server/helpers/getAccessTokenFromDB'); // async function
 
 // server entry point
 const app = require('../server/app');
@@ -59,6 +60,12 @@ const ghOAuthUrl = `https://github.com/login/oauth/authorize?client_id=${ghClien
 //   console.log(queriesObj);
 // })();
 
+async function callServer() {
+  let res = fetch(`http://localhost:${port}/oauth/github/callback`);
+  let data = res.json();
+  console.log(data);
+}
+
 async function main() {
   const { ghOAuth } = await inquirer.prompt(ghOAuthQuestions);
 
@@ -69,23 +76,28 @@ async function main() {
   // the rest will be handled by the express server
 
   if (ghOAuth) {
-    const server = app.listen(port, () => {
-      // console.log(`Example app listening at http://localhost:${port}`);
-      console.log('Loading...');
-    });
-    await wait(1000);
-    await open(ghOAuthUrl);
+    let accessToken = await getAccessTokenFromDB();
 
-    await (async function callServer() {
-      let res = await fetch(`http://localhost:${port}/oauth/github/callback`);
-      let data = res.text();
-      console.log(data);
-    })();
+    if (!accessToken) {
+      const server = app.listen(port, () => {
+        console.log(`Example app listening at http://localhost:${port}`);
+        console.log('Loading...');
+      });
+
+      await wait(1000);
+      await open(ghOAuthUrl);
+    } else {
+      console.log('accessToken already exists!');
+    }
+
+    // await wait(1000);
+
+    // await callServer();
 
     // await loadGhQueries();
-    server.close(() => {
-      console.log('Http server closed.');
-    });
+    // server.close(() => {
+    //   console.log('Http server closed.');
+    // });
   }
 
   // ---------------------------------------------------------------------------

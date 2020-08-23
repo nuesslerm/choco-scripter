@@ -1,6 +1,8 @@
 const axios = require('axios');
 const db = require('../db');
 
+const getAccessTokenFromDB = require('./getAccessTokenFromDB'); // async function
+
 const gqlDocsQuery = `query {
   organization(login: "chocoapp") {
     repository(name: "choco-appsync") {
@@ -26,11 +28,6 @@ const gqlDocsQuery = `query {
     }
   }
 }`;
-
-const getAccessTokenFromDB = async () =>
-  await db.gitHubStore.findOne({}, (err) => {
-    if (err) throw err;
-  });
 
 const loadGhQueries = async () => {
   const accessToken = await getAccessTokenFromDB();

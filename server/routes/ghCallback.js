@@ -6,7 +6,7 @@ router.get('/', async (req, res, next) => {
   const rawCode = /code=([^&]*)/.exec(req.url) || null;
   const code = rawCode && rawCode.length > 1 ? rawCode[1] : null;
 
-  console.log(code);
+  console.log('code', code);
 
   if (!code) {
     return res.send({
@@ -17,8 +17,10 @@ router.get('/', async (req, res, next) => {
 
   await loadAccessToken(code);
 
-  res.send('AccessToken fetched!');
-  res.render('index', { title: 'Express' });
+  res.send({
+    success: true,
+    message: 'AccessToken fetched!',
+  });
 });
 
 module.exports = router;
