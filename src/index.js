@@ -137,6 +137,9 @@ const cmdStrGen = (userProfileIn, queryNameIn, paramObjIn) =>
     paramObjIn
   )}'`;
 
+const wait = (timeToDelay) =>
+  new Promise((resolve) => setTimeout(resolve, timeToDelay));
+
 // ---------------------------------------------------------------------------
 // RECURSIVE FUNCTION
 // ---------------------------------------------------------------------------
@@ -148,6 +151,7 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
     queryParamArr,
     paramObj: prevParamObj,
   } = prevAnswersMap;
+  const newOrderParamObjArr = [];
 
   if (!sameQuery) {
     const { queryType } = await inquirer.prompt(queryTypeQuestions);
@@ -174,14 +178,21 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
 
   // ---------------------------------------------------------------------------
 
-  const { newOrderNum, newProductNum, ...newParamObj } = await inquirer.prompt(
+  const { newOrderNums, newProductNum, ...newParamObj } = await inquirer.prompt(
     paramObjQuestions(queryParamArr, sameQuery, prevParamObj, prevAnswersMap)
   );
 
-  if (!!newOrderNum) {
-    newParamObj['order'] = defaultOrder(parseInt(newOrderNum));
+  if (!!newOrderNums) {
+    let { order, ...rest } = newParamObj;
 
-    prevAnswersMap['orderNum'] = newOrderNum;
+    for (let orderNum of newOrderNums) {
+      newOrderParamObjArr.push({
+        ...rest,
+        order: defaultOrder(parseInt(orderNum)),
+      });
+    }
+
+    prevAnswersMap['orderNums'] = newOrderNums;
   }
 
   if (!!newProductNum) {
@@ -189,8 +200,6 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
 
     prevAnswersMap['productNum'] = newProductNum;
   }
-
-  console.log(newParamObj['products']);
 
   prevAnswersMap['paramObj'] = newParamObj;
 
@@ -208,13 +217,44 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
   }
 
   try {
-    const { stdout } = await exec(
-      cmdStrGen(prevAnswersMap['userProfile'], queryName, newParamObj)
-    );
+    if (!!newOrderParamObjArr.length) {
+      // await (function placeOrderWithDelay(i, delay) {
+      //   setTimeout(async function () {
+      //     // placing an order
+      //     const { stdout } = await exec(
+      //       cmdStrGen(
+      //         prevAnswersMap['userProfile'],
+      //         queryName,
+      //         newOrderParamObjArr[i]
+      //       )
+      //     );
+      //     // console.logging response from BE
+      //     console.log(JSON.stringify(JSON.parse(stdout), null, 2));
+      //     // decrement i and call loop again if i > 0
+      //     if (++i < newOrderParamObjArr.length)
+      //       await placeOrderWithDelay(i, delay);
+      //   }, delay);
+      // })(0, 1000);
 
-    let parsedResponse = JSON.stringify(JSON.parse(stdout), null, 2);
+      for (let orderParamObj of newOrderParamObjArr) {
+        // placing an order
+        const { stdout } = await exec(
+          cmdStrGen(prevAnswersMap['userProfile'], queryName, orderParamObj)
+        );
 
-    console.log(parsedResponse);
+        // console.logging response from BE
+        console.log(JSON.stringify(JSON.parse(stdout), null, 2));
+
+        // wait 1s
+        await wait(1000);
+      }
+    } else {
+      const { stdout } = await exec(
+        cmdStrGen(prevAnswersMap['userProfile'], queryName, newParamObj)
+      );
+
+      console.log(JSON.stringify(JSON.parse(stdout), null, 2));
+    }
   } catch (err) {
     throw new Error(err);
   }

@@ -1,3 +1,4 @@
+const inquirer = require('inquirer');
 const uuid = require('uuid');
 
 const {
@@ -31,9 +32,10 @@ const userProfileQuestions = (userProfileSet) => ({
   type: 'list',
   name: 'userProfile',
   message: 'Which profile would you like to use?',
-  choices: [...userProfileSet].map(
-    (profile) => `${profile.key}: ${profile.userIdentifier}`
-  ),
+  pageSize: 10,
+  choices: [...userProfileSet]
+    .map((profile) => `${profile.key}: ${profile.userIdentifier}`)
+    .concat(userProfileSet.size >= 10 ? new inquirer.Separator() : []),
 });
 
 const queryTypeQuestions = {
@@ -52,7 +54,8 @@ const queryNameQuestions = (queryType, queriesObj) => ({
   type: 'list',
   name: 'queryName',
   message: 'Which query would you like to execute?',
-  choices: Object.keys(queriesObj),
+  pageSize: 10,
+  choices: Object.keys(queriesObj).concat(new inquirer.Separator()),
   default: () => {
     if (queryType === 'mutation') {
       return 'orderCreate';
@@ -100,17 +103,66 @@ const paramObjQuestions = (
       }
     },
   })),
+  // {
+  //   type: 'input',
+  //   name: 'newOrderNums',
+  //   message: `How many products should the order contain?`,
+  //   when: (newParamObj) => newParamObj['order'],
+  //   default: () => {
+  //     if (sameQuery) {
+  //       return prevAnswersMap['orderNums'];
+  //     } else {
+  //       return Math.floor(Math.random() * 19 + 1);
+  //     }
+  //   },
+  // },
   {
-    type: 'input',
-    name: 'newOrderNum',
+    type: 'checkbox',
+    name: 'newOrderNums',
     message: `How many products should the order contain?`,
+    pageSize: 20,
+    choices: [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      20,
+      25,
+      30,
+      35,
+      40,
+      45,
+      50,
+      100,
+      150,
+      200,
+      new inquirer.Separator(),
+    ],
     when: (newParamObj) => newParamObj['order'],
     default: () => {
       if (sameQuery) {
-        return prevAnswersMap['orderNum'];
+        return [...prevAnswersMap['orderNums']];
       } else {
-        return Math.floor(Math.random() * 19 + 1);
+        return [Math.floor(Math.random() * 14 + 1)];
       }
+    },
+    validate: (newOrderNums) => {
+      if (newOrderNums.length < 1) {
+        return 'You must choose at least one value.';
+      }
+
+      return true;
     },
   },
   {
