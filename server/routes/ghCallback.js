@@ -6,8 +6,6 @@ router.get('/', async (req, res, next) => {
   const rawCode = /code=([^&]*)/.exec(req.url) || null;
   const code = rawCode && rawCode.length > 1 ? rawCode[1] : null;
 
-  console.log('code', code);
-
   if (!code) {
     return res.send({
       success: false,

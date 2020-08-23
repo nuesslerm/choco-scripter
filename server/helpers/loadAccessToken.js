@@ -11,7 +11,6 @@ const ghClientId = process.env.GH_CLIENT_ID;
 const ghClientSecret = process.env.GH_CLIENT_SECRET;
 
 const loadAccessToken = async (code) => {
-  console.log("I'm here");
   const postData = querystring.stringify({
     client_id: ghClientId,
     client_secret: ghClientSecret,

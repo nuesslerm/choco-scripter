@@ -4,10 +4,7 @@ inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 const fs = require('fs-extra');
 const exec = require('await-exec');
 const open = require('open');
-const fetch = require('node-fetch');
 
-const { loadGhQueries } = require('../server/helpers/loadGhQueries');
-const db = require('../server/db');
 const { loadQueriesFromStore } = require('./helpers/loadQueriesFromStore');
 const { loadChocoConfig } = require('./helpers/loadChocoConfig');
 const {
@@ -39,32 +36,15 @@ dotenv.config();
 
 // const configObj = fs.readJSONSync(config);
 
-// --------------------------------
-
 const ghClientId = process.env.GH_CLIENT_ID;
 const ghClientSecret = process.env.GH_CLIENT_SECRET;
 const port = process.env.PORT;
 
 const ghOAuthUrl = `https://github.com/login/oauth/authorize?client_id=${ghClientId}&scope=repo%20read:org`;
 
-// db.queriesStore.insert({ queries: data }, (err) => {
-//   if (err) throw err;
-// });
-
-// --------------------------------
-
-// const loadQueriesFromStore = async () => await db.queriesStore.find({});
-
-// (async () => {
-//   const queriesObj = await loadQueriesFromStore();
-//   console.log(queriesObj);
-// })();
-
-async function callServer() {
-  let res = fetch(`http://localhost:${port}/oauth/github/callback`);
-  let data = res.json();
-  console.log(data);
-}
+// ---------------------------------------------------------------------------
+// DECLARATION OF MAIN METHOD
+// ---------------------------------------------------------------------------
 
 async function main() {
   const { ghOAuth } = await inquirer.prompt(ghOAuthQuestions);
@@ -80,24 +60,24 @@ async function main() {
 
     if (!accessToken) {
       const server = app.listen(port, () => {
-        console.log(`Example app listening at http://localhost:${port}`);
+        // console.log(`Example app listening at http://localhost:${port}`);
         console.log('Loading...');
       });
 
       await wait(1000);
       await open(ghOAuthUrl);
+
+      while (!accessToken) {
+        await wait(2000);
+        accessToken = await getAccessTokenFromDB();
+      }
+
+      server.close(() => {
+        // console.log('Http server closed.');
+      });
     } else {
       console.log('accessToken already exists!');
     }
-
-    // await wait(1000);
-
-    // await callServer();
-
-    // await loadGhQueries();
-    // server.close(() => {
-    //   console.log('Http server closed.');
-    // });
   }
 
   // ---------------------------------------------------------------------------
