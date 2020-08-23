@@ -137,6 +137,9 @@ const cmdStrGen = (userProfileIn, queryNameIn, paramObjIn) =>
     paramObjIn
   )}'`;
 
+const wait = (timeToDelay) =>
+  new Promise((resolve) => setTimeout(resolve, timeToDelay));
+
 // ---------------------------------------------------------------------------
 // RECURSIVE FUNCTION
 // ---------------------------------------------------------------------------
@@ -215,23 +218,42 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
 
   try {
     if (!!newOrderParamObjArr.length) {
+      // await (function placeOrderWithDelay(i, delay) {
+      //   setTimeout(async function () {
+      //     // placing an order
+      //     const { stdout } = await exec(
+      //       cmdStrGen(
+      //         prevAnswersMap['userProfile'],
+      //         queryName,
+      //         newOrderParamObjArr[i]
+      //       )
+      //     );
+      //     // console.logging response from BE
+      //     console.log(JSON.stringify(JSON.parse(stdout), null, 2));
+      //     // decrement i and call loop again if i > 0
+      //     if (++i < newOrderParamObjArr.length)
+      //       await placeOrderWithDelay(i, delay);
+      //   }, delay);
+      // })(0, 1000);
+
       for (let orderParamObj of newOrderParamObjArr) {
+        // placing an order
         const { stdout } = await exec(
           cmdStrGen(prevAnswersMap['userProfile'], queryName, orderParamObj)
         );
 
-        let parsedResponse = JSON.stringify(JSON.parse(stdout), null, 2);
+        // console.logging response from BE
+        console.log(JSON.stringify(JSON.parse(stdout), null, 2));
 
-        console.log(parsedResponse);
+        // wait 1s
+        await wait(1000);
       }
     } else {
       const { stdout } = await exec(
         cmdStrGen(prevAnswersMap['userProfile'], queryName, newParamObj)
       );
 
-      let parsedResponse = JSON.stringify(JSON.parse(stdout), null, 2);
-
-      console.log(parsedResponse);
+      console.log(JSON.stringify(JSON.parse(stdout), null, 2));
     }
   } catch (err) {
     throw new Error(err);
