@@ -64,6 +64,7 @@ async function main() {
     let accessToken = await getAccessTokenFromDB();
 
     if (!accessToken) {
+      console.log('No access token found. 🚧 Opening website...');
       await wait(1000);
       await open(ghOAuthUrl);
 
