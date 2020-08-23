@@ -3,7 +3,6 @@ inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 
 const fs = require('fs-extra');
 const opn = require('opn');
-
 const exec = require('await-exec');
 
 const { loadGhQueries } = require('../server/loadGhQueries');
@@ -24,6 +23,7 @@ const {
   paramObjQuestions,
   askAgainQuestions,
 } = require('./questions');
+const { cmdStrGen, wait } = require('./helper_folder/helpers');
 
 const dotenv = require('dotenv');
 dotenv.config();
@@ -127,18 +127,6 @@ async function main() {
 
   await repeatQuery(answersMap, false);
 }
-
-// ---------------------------------------------------------------------------
-// HELPER FUNCTIONS
-// ---------------------------------------------------------------------------
-
-const cmdStrGen = (userProfileIn, queryNameIn, paramObjIn) =>
-  `choco -p ${userProfileIn} run -d gqlQueries/${queryNameIn}.graphql -v '${JSON.stringify(
-    paramObjIn
-  )}'`;
-
-const wait = (timeToDelay) =>
-  new Promise((resolve) => setTimeout(resolve, timeToDelay));
 
 // ---------------------------------------------------------------------------
 // RECURSIVE FUNCTION
