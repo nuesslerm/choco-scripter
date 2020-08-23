@@ -5,7 +5,7 @@ const {
   defaultProduct,
   defaultMessage,
   defaultChat,
-} = require('./queryParamDefaults');
+} = require('./helpers/queryParamDefaults');
 
 const ghOAuthQuestions = {
   type: 'confirm',

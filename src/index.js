@@ -7,12 +7,12 @@ const exec = require('await-exec');
 
 const { loadGhQueries } = require('../server/loadGhQueries');
 const db = require('../server/db');
-const { loadQueriesFromStore } = require('./loadQueriesFromStore');
-const { loadChocoConfig } = require('./loadChocoConfig');
+const { loadQueriesFromStore } = require('./helpers/loadQueriesFromStore');
+const { loadChocoConfig } = require('./helpers/loadChocoConfig');
 const {
   defaultOrder,
   defaultAdminProductArr,
-} = require('./queryParamDefaults');
+} = require('./helpers/queryParamDefaults');
 const {
   ghOAuthQuestions,
   environmentQuestions,
@@ -23,7 +23,7 @@ const {
   paramObjQuestions,
   askAgainQuestions,
 } = require('./questions');
-const { cmdStrGen, wait } = require('./helper_folder/helpers');
+const { cmdStrGen, wait } = require('./helpers/misc');
 
 const dotenv = require('dotenv');
 dotenv.config();
