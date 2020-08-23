@@ -4,6 +4,7 @@ inquirer.registerPrompt('recursive', require('inquirer-recursive'));
 const fs = require('fs-extra');
 const exec = require('await-exec');
 const open = require('open');
+const path = require('path');
 
 const { loadQueriesFromStore } = require('./helpers/loadQueriesFromStore');
 const { loadChocoConfig } = require('./helpers/loadChocoConfig');
@@ -41,6 +42,8 @@ const ghClientSecret = process.env.GH_CLIENT_SECRET;
 const port = process.env.PORT;
 
 const ghOAuthUrl = `https://github.com/login/oauth/authorize?client_id=${ghClientId}&scope=repo%20read:org`;
+
+const appDir = path.dirname(require.main.filename);
 
 // ---------------------------------------------------------------------------
 // DECLARATION OF MAIN METHOD
@@ -227,7 +230,7 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
   if (!sameQuery) {
     try {
       await fs.writeFile(
-        `gqlQueries/${queryName}.graphql`,
+        `${appDir}/../gqlQueries/${queryName}.graphql`,
         `${queriesObj[queryName]}`
       );
     } catch (err) {
