@@ -179,8 +179,6 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
     paramObjQuestions(queryParamArr, sameQuery, prevParamObj, prevAnswersMap)
   );
 
-  console.log(newOrderNums);
-
   if (!!newOrderNums) {
     let { order, ...rest } = newParamObj;
 
@@ -189,10 +187,6 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
         ...rest,
         order: defaultOrder(parseInt(orderNum)),
       });
-
-      // console.log(
-      //   newOrderParamObjArr /* newOrderParamObjArr[0].order.orderProducts */
-      // );
     }
 
     prevAnswersMap['orderNums'] = newOrderNums;
