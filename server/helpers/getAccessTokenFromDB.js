@@ -7,7 +7,7 @@ const getAccessTokenFromDB = async () => {
     });
     return accessToken;
   } catch (err) {
-    throw new Error(err);
+    return null;
   }
 };
 

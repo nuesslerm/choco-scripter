@@ -6,8 +6,6 @@ const getGhQueriesFromDB = async () => {
       throw new Error(err);
     });
 
-    console.log(queries);
-
     const allMutations = {};
     const allQueries = {};
 
@@ -27,7 +25,7 @@ const getGhQueriesFromDB = async () => {
 
     return { mutation: allMutations, query: allQueries };
   } catch (err) {
-    throw new Error(err);
+    return null;
   }
 };
 
