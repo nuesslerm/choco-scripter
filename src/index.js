@@ -30,8 +30,7 @@ const getAccessTokenFromDB = require('../server/helpers/getAccessTokenFromDB'); 
 const getGhQueriesFromDB = require('../server/helpers/getGhQueriesFromDB'); // async function
 
 // loading in environment variables
-const dotenv = require('dotenv');
-dotenv.config();
+require('dotenv').config();
 
 // const config =
 //   '/Users/nuesslerm/Library/Application Support/gql-playground/config.json';
@@ -95,7 +94,6 @@ async function main() {
         allEntries = await getGhQueriesFromDB();
       }
 
-      console.log(allEntries);
       console.log('Successfully retrieved GH queries. 💪');
     }
 

@@ -4,8 +4,7 @@ const db = require('../db');
 const querystring = require('querystring');
 
 // loading in environment variables (needs to be loaded into every file where they are used?)
-const dotenv = require('dotenv');
-dotenv.config();
+require('dotenv').config();
 
 const ghClientId = process.env.GH_CLIENT_ID;
 const ghClientSecret = process.env.GH_CLIENT_SECRET;

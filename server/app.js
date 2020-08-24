@@ -6,8 +6,7 @@ const indexRouter = require('./routes/index');
 const ghCallbackRouter = require('./routes/ghCallback');
 
 // loading in environment variables
-const dotenv = require('dotenv');
-dotenv.config();
+require('dotenv').config();
 
 const app = express();
 
