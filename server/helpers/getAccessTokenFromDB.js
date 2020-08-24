@@ -2,9 +2,10 @@ const db = require('../db');
 
 const getAccessTokenFromDB = async () => {
   try {
-    return await db.gitHubStore.findOne({}, (err) => {
+    const { accessToken } = await db.gitHubStore.findOne({}, (err) => {
       throw new Error(err);
     });
+    return accessToken;
   } catch (err) {
     throw new Error(err);
   }

@@ -6,7 +6,6 @@ const exec = require('await-exec');
 const open = require('open');
 const path = require('path');
 
-const { loadQueriesFromStore } = require('./helpers/loadQueriesFromStore');
 const { loadChocoConfig } = require('./helpers/loadChocoConfig');
 const {
   defaultOrder,
@@ -23,10 +22,12 @@ const {
   askAgainQuestions,
 } = require('./questions');
 const { cmdStrGen, wait } = require('./helpers/misc');
-const getAccessTokenFromDB = require('../server/helpers/getAccessTokenFromDB'); // async function
 
 // server entry point
 const app = require('../server/app');
+const { loadGhQueries } = require('../server/helpers/loadGhQueries');
+const getAccessTokenFromDB = require('../server/helpers/getAccessTokenFromDB'); // async function
+const getGhQueriesFromDB = require('../server/helpers/getGhQueriesFromDB'); // async function
 
 // loading in environment variables
 const dotenv = require('dotenv');
@@ -76,22 +77,26 @@ async function main() {
 
         accessToken = await getAccessTokenFromDB();
       }
-    }
+    } else {
+      try {
+        await fs.remove('database/queriesStore.db');
+      } catch (err) {
+        throw new Error(err);
+      }
 
-    try {
-      await fs.remove('database/queriesStore.db');
-    } catch (err) {
-      throw new Error(err);
-    }
+      // get new gqlQueries here
+      await loadGhQueries();
 
-    // get new gqlQueries here
+      let allEntries = await getGhQueriesFromDB();
 
-    let allEntries = await loadQueriesFromStore();
+      while (!allEntries) {
+        await wait(2000);
 
-    while (!allEntries) {
-      await wait(2000);
+        allEntries = await getGhQueriesFromDB();
+      }
 
-      allEntries = await loadQueriesFromStore();
+      console.log(allEntries);
+      console.log('Successfully retrieved GH queries. 💪');
     }
 
     server.close(() => {
@@ -178,7 +183,7 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
   if (!sameQuery) {
     const { queryType } = await inquirer.prompt(queryTypeQuestions);
 
-    const allEntries = await loadQueriesFromStore();
+    const allEntries = await getGhQueriesFromDB();
 
     queriesObj = allEntries[queryType];
 

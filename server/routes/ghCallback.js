@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { loadAccessToken } = require('../helpers/loadAccessToken');
+const { loadGhQueries } = require('../helpers/loadGhQueries');
 
 router.get('/', async (req, res, next) => {
   const rawCode = /code=([^&]*)/.exec(req.url) || null;
@@ -14,6 +15,8 @@ router.get('/', async (req, res, next) => {
   }
 
   await loadAccessToken(code);
+
+  await loadGhQueries();
 
   res.render('index', {
     title: 'Successfully retrieved GH queries. 💪',

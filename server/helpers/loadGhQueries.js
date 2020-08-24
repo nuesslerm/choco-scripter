@@ -40,16 +40,12 @@ const loadGhQueries = async () => {
     { headers: { Authorization: `bearer ${accessToken}` } }
   );
 
-  console.log(response.data.data.organization.repository.content.entries);
-
   await db.queriesStore.insert(
     { queries: response.data.data.organization.repository.content.entries },
     (err) => {
       if (err) throw err;
     }
   );
-
-  // return response.data.data.organization.repository.content.entries;
 };
 
 module.exports = { loadGhQueries };
