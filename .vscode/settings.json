@@ -1,0 +1,15 @@
+{
+  "eslint.packageManager": "yarn",
+  "eslint.nodePath": "",
+  "eslint.runtime": "",
+  "eslint.workingDirectories": [
+    {
+      "mode": "auto"
+    }
+  ],
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "eslint.validate": ["html", "javascript"],
+  "eslint.trace.server": "messages"
+}
