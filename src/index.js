@@ -7,7 +7,6 @@ const open = require('open');
 const path = require('path');
 
 const appDir = path.dirname(require.main.filename);
-const databasePath = appDir + '/../database';
 
 const { loadChocoConfig } = require('./helpers/loadChocoConfig');
 const {
@@ -79,7 +78,7 @@ async function main() {
       }
     } else {
       try {
-        await fs.remove(`${databasePath}/queriesStore.db`);
+        await fs.remove(`${appDir}/../database/queriesStore.db`);
       } catch (err) {
         throw new Error(err);
       }
@@ -234,7 +233,7 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
   if (!sameQuery) {
     try {
       await fs.writeFile(
-        `${appDir}/../database/${queryName}.graphql`,
+        `${appDir}/../database/temp/${queryName}.graphql`,
         `${queriesObj[queryName]}`
       );
     } catch (err) {
@@ -278,6 +277,11 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
   if (askAgain) {
     await repeatQuery(prevAnswersMap, sameQueryUpdate);
   } else {
+    try {
+      await fs.emptyDir(`${appDir}/../database/temp`);
+    } catch (err) {
+      throw new Error(err);
+    }
     console.log('Bye! 👋');
   }
 }
