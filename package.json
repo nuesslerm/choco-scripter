@@ -1,15 +1,10 @@
 {
   "name": "choco-scripter",
   "version": "1.0.0",
-  "main": "index.js",
   "author": "nuesslerm <markus@choco.com>",
   "license": "MIT",
-  "files": [
-    "bin",
-    "dist"
-  ],
   "bin": {
-    "choco": "bin/choco.js"
+    "choco-scripter": "bin/choco-scripter.js"
   },
   "scripts": {
     "choco-scripter": "bin/choco-scripter.js",

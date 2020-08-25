@@ -232,7 +232,7 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
 
   if (!sameQuery) {
     try {
-      await fs.writeFile(
+      await fs.outputFile(
         `${appDir}/../database/temp/${queryName}.graphql`,
         `${queriesObj[queryName]}`
       );

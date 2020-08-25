@@ -123,8 +123,3 @@ database/*
 
 # keep just the temp folder
 !database/.gitkeep
-!database/temp
-
-# exclude everything in database/temp folder
-# keep just the folder
-!database/temp/.gitkeep
