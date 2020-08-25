@@ -66,7 +66,6 @@ async function main() {
     });
 
     let accessToken = await getAccessTokenFromDB();
-    console.log(accessToken);
 
     if (!accessToken) {
       console.log('No access token found. 🚧 Opening website...');
