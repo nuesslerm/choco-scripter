@@ -118,3 +118,9 @@ dist
 node_modules
 database
 gqlQueries
+
+# exclude everything in database folder
+database/*
+
+# keep just the folder
+!database/.gitkeep
