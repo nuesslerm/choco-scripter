@@ -233,7 +233,7 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
   if (!sameQuery) {
     try {
       await fs.writeFile(
-        `${appDir}/../gqlQueries/${queryName}.graphql`,
+        `${appDir}/../database/${queryName}.graphql`,
         `${queriesObj[queryName]}`
       );
     } catch (err) {
