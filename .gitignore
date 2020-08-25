@@ -121,5 +121,9 @@ gqlQueries
 # exclude everything in database folder
 database/*
 
+# keep just the temp folder
+!database/temp
+
+# exclude everything in database/temp folder
 # keep just the folder
-!database/.gitkeep
+!database/temp/.gitkeep

@@ -6,6 +6,9 @@ const exec = require('await-exec');
 const open = require('open');
 const path = require('path');
 
+const appDir = path.dirname(require.main.filename);
+const databasePath = appDir + '/../database';
+
 const { loadChocoConfig } = require('./helpers/loadChocoConfig');
 const {
   defaultOrder,
@@ -43,8 +46,6 @@ const port = process.env.PORT;
 
 const ghOAuthUrl = `https://github.com/login/oauth/authorize?client_id=${ghClientId}&scope=repo%20read:org`;
 
-const appDir = path.dirname(require.main.filename);
-
 // ---------------------------------------------------------------------------
 // DECLARATION OF MAIN METHOD
 // ---------------------------------------------------------------------------
@@ -78,7 +79,7 @@ async function main() {
       }
     } else {
       try {
-        await fs.remove('database/queriesStore.db');
+        await fs.remove(`${databasePath}/queriesStore.db`);
       } catch (err) {
         throw new Error(err);
       }
