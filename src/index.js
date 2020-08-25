@@ -50,6 +50,7 @@ const ghOAuthUrl = `https://github.com/login/oauth/authorize?client_id=${ghClien
 // ---------------------------------------------------------------------------
 
 async function main() {
+  // console.log(appDir);
   const { ghOAuth } = await inquirer.prompt(ghOAuthQuestions);
 
   const answersMap = {};
@@ -65,6 +66,7 @@ async function main() {
     });
 
     let accessToken = await getAccessTokenFromDB();
+    console.log(accessToken);
 
     if (!accessToken) {
       console.log('No access token found. 🚧 Opening website...');
