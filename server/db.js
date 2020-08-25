@@ -1,12 +1,16 @@
 const Datastore = require('nedb-promises');
+const path = require('path');
+
+const appDir = path.dirname(require.main.filename);
 
 const db = {};
+
 db.gitHubStore = Datastore.create({
-  filename: 'database/gitHubStore.db',
+  filename: `${appDir}/../database/gitHubStore.db`,
 });
 
 db.queriesStore = Datastore.create({
-  filename: 'database/queriesStore.db',
+  filename: `${appDir}/../database/queriesStore.db`,
 });
 
 module.exports = db;

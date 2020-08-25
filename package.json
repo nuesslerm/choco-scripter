@@ -1,11 +1,16 @@
 {
   "name": "choco-scripter",
   "version": "1.0.0",
-  "main": "index.js",
   "author": "nuesslerm <markus@choco.com>",
   "license": "MIT",
+  "bin": {
+    "choco-scripter": "bin/choco-scripter.js"
+  },
   "scripts": {
-    "lint": "eslint ."
+    "choco-scripter": "bin/choco-scripter.js",
+    "lint": "eslint .",
+    "prettier": "prettier --write '**/*.+(js|json|yml|yaml)'",
+    "clean": "rm -rf ./coverage && rm -rf ./dist && rm -rf ./node_modules"
   },
   "devDependencies": {
     "eslint": "^7.7.0",
@@ -22,7 +27,7 @@
     "prettier": "^2.0.5"
   },
   "dependencies": {
-    "@chocoapp/choco-cli": "^2.6.2",
+    "@chocoapp/choco-cli": "2.6.2",
     "await-exec": "^0.1.2",
     "axios": "^0.19.2",
     "dotenv": "^8.2.0",
@@ -37,6 +42,7 @@
     "node-fetch": "^2.6.0",
     "open": "^7.2.0",
     "query-string": "^6.13.1",
+    "ssh2-sftp-client": "^5.2.2",
     "uuid": "^8.3.0",
     "yargs": "^15.4.1"
   }

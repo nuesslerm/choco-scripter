@@ -7,6 +7,22 @@ const {
   defaultChat,
 } = require('./helpers/queryParamDefaults');
 
+const requireLetterNumberLength = (value) => {
+  if (/\w/.test(value) && /\d/.test(value) && value.length === 40) {
+    return true;
+  }
+
+  return "That ain't it chief 🙅‍♂️";
+};
+
+const ghClientSecretQuestions = {
+  type: 'password',
+  message: 'Enter oauth client secret',
+  name: 'ghClientSecret',
+  mask: '*',
+  validate: requireLetterNumberLength,
+};
+
 const ghOAuthQuestions = {
   type: 'confirm',
   name: 'ghOAuth',
@@ -204,6 +220,7 @@ const askAgainQuestions = [
 ];
 
 module.exports = {
+  ghClientSecretQuestions,
   ghOAuthQuestions,
   environmentQuestions,
   userTypeQuestions,
