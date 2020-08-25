@@ -1,10 +1,8 @@
 const db = require('../db');
 
-const getGhQueriesFromDB = async () => {
+const getGhQueries_DB = async () => {
   try {
-    const { queries } = await db.queriesStore.findOne({}, (err) => {
-      throw new Error(err);
-    });
+    const { queries } = await db.queriesStore.findOne({ __id: 'queries' });
 
     const allMutations = {};
     const allQueries = {};
@@ -29,4 +27,4 @@ const getGhQueriesFromDB = async () => {
   }
 };
 
-module.exports = getGhQueriesFromDB;
+module.exports = getGhQueries_DB;

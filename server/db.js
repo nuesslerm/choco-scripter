@@ -4,6 +4,7 @@ const path = require('path');
 const appDir = path.dirname(require.main.filename);
 
 const db = {};
+
 db.gitHubStore = Datastore.create({
   filename: `${appDir}/../database/gitHubStore.db`,
 });

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { loadAccessToken } = require('../helpers/loadAccessToken');
-const { loadGhQueries } = require('../helpers/loadGhQueries');
+const loadAccessToken = require('../helpers/loadAccessToken');
+const loadGhQueries = require('../helpers/loadGhQueries');
 
 router.get('/', async (req, res, next) => {
   const rawCode = /code=([^&]*)/.exec(req.url) || null;

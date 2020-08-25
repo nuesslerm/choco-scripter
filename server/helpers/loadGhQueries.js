@@ -1,7 +1,7 @@
 const axios = require('axios');
 const db = require('../db');
 
-const getAccessTokenFromDB = require('./getAccessTokenFromDB'); // async function
+const getAccessToken_DB = require('./getAccessToken_DB'); // async function
 
 const gqlDocsQuery = `query {
   organization(login: "chocoapp") {
@@ -30,7 +30,7 @@ const gqlDocsQuery = `query {
 }`;
 
 const loadGhQueries = async () => {
-  const accessToken = await getAccessTokenFromDB();
+  const accessToken = await getAccessToken_DB();
 
   if (!accessToken) return null;
 
@@ -40,12 +40,18 @@ const loadGhQueries = async () => {
     { headers: { Authorization: `bearer ${accessToken}` } }
   );
 
-  await db.queriesStore.insert(
-    { queries: response.data.data.organization.repository.content.entries },
-    (err) => {
-      if (err) throw err;
-    }
-  );
+  try {
+    await db.queriesStore.update(
+      { __id: 'queries' },
+      {
+        __id: 'queries',
+        queries: response.data.data.organization.repository.content.entries,
+      },
+      { upsert: true }
+    );
+  } catch (err) {
+    throw new Error(err);
+  }
 };
 
-module.exports = { loadGhQueries };
+module.exports = loadGhQueries;

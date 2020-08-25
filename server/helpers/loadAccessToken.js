@@ -3,13 +3,15 @@ const db = require('../db');
 // querystring is used to stringify and parse objects into/from REST request/response data
 const querystring = require('querystring');
 
+const getGHClientSecret_DB = require('../../src/helpers/getGHClientSecret_DB');
+
 // loading in environment variables (needs to be loaded into every file where they are used?)
 require('dotenv').config();
 
-const ghClientId = process.env.GH_CLIENT_ID;
-const ghClientSecret = process.env.GH_CLIENT_SECRET;
-
 const loadAccessToken = async (code) => {
+  const ghClientId = '2635e4b2a3d9838e4328';
+  const ghClientSecret = await getGHClientSecret_DB();
+
   const postData = querystring.stringify({
     client_id: ghClientId,
     client_secret: ghClientSecret,
@@ -29,9 +31,15 @@ const loadAccessToken = async (code) => {
 
   const data = querystring.parse(response.data);
 
-  await db.gitHubStore.insert({ accessToken: data.access_token }, (err) => {
-    if (err) throw err;
-  });
+  try {
+    await db.gitHubStore.update(
+      { __id: 'accessToken' },
+      { __id: 'accessToken', accessToken: data.access_token },
+      { upsert: true }
+    );
+  } catch (err) {
+    throw new Error(err);
+  }
 };
 
-module.exports = { loadAccessToken };
+module.exports = loadAccessToken;
