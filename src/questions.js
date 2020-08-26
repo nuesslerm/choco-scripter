@@ -17,7 +17,7 @@ const requireLetterNumberLength = (value) => {
 
 const ghClientSecretQuestions = {
   type: 'password',
-  message: 'Enter oauth client secret',
+  message: 'Enter client secret',
   name: 'ghClientSecret',
   mask: '*',
   validate: requireLetterNumberLength,
@@ -30,50 +30,56 @@ const ghOAuthQuestions = {
   default: false,
 };
 
-const environmentQuestions = (stageSet) => ({
+const environmentQuestions = (stagesArr) => ({
   type: 'list',
   name: 'environment',
   message: 'Which environment would you like to use? 🌍',
-  choices: [...stageSet],
+  choices: stagesArr,
 });
 
-const userTypeQuestions = (userTypeSet) => ({
+const userTypeQuestions = (filteredUserTypeArr) => ({
   type: 'list',
-  name: 'userType',
+  name: 'type',
   message: 'Which userType would you like to use? 🙋‍♀️',
-  choices: [...userTypeSet],
+  choices: filteredUserTypeArr,
 });
 
-const userProfileQuestions = (userType, userProfileSet) => ({
+const userProfileQuestions = (type, filteredProfilesArr) => ({
   type: 'list',
-  name: 'userProfile',
+  name: 'profile',
   message: 'Which profile would you like to use? 📚',
   pageSize: 10,
-  choices: [...userProfileSet]
-    .map((profile) => `${profile.key}: ${profile.userIdentifier}`)
-    .concat(userProfileSet.size >= 10 ? new inquirer.Separator() : []),
+  choices: filteredProfilesArr.concat(
+    filteredProfilesArr.length >= 10 ? new inquirer.Separator() : []
+  ),
   default: () => {
-    if (userType === 'admin') {
-      return 'admin: Markus';
-    } else if (userType === 'customer') {
-      return 'de-DE Restaurant User: +4930967711750';
+    if (type === 'admin') {
+      return 'admin : Markus';
+    } else if (type === 'customer') {
+      return 'de-DE Restaurant User : +4930967711750';
     }
   },
 });
 
-const queryTypeQuestions = {
+const queryTypeQuestions = (type) => ({
   type: 'list',
   name: 'queryType',
   default: 'Query',
   message: 'What do you want to do? 🤸‍♀️',
   choices: ['Mutation', 'Query'],
-  default: 'Mutation',
+  default: () => {
+    if (type === 'admin') {
+      return 'Query';
+    } else if (type === 'customer') {
+      return 'Mutation';
+    }
+  },
   filter: function (val) {
     return val.toLowerCase();
   },
-};
+});
 
-const queryNameQuestions = (queryType, queriesObj) => ({
+const queryNameQuestions = (queriesObj, queryType) => ({
   type: 'list',
   name: 'queryName',
   message: 'Which query would you like to execute? 🤔',
@@ -82,7 +88,7 @@ const queryNameQuestions = (queryType, queriesObj) => ({
   default: () => {
     if (queryType === 'mutation') {
       return 'orderCreate';
-    } else {
+    } else if (queryType === 'query') {
       return 'getChat';
     }
   },
@@ -92,7 +98,8 @@ const paramObjQuestions = (
   queryParamArr,
   sameQuery,
   prevParamObj,
-  prevAnswersMap
+  prevOrderNums,
+  prevProductNum
 ) => [
   ...queryParamArr.map((queryParam) => ({
     type: 'input',
@@ -126,19 +133,6 @@ const paramObjQuestions = (
       }
     },
   })),
-  // {
-  //   type: 'input',
-  //   name: 'newOrderNums',
-  //   message: `How many products should the order contain?`,
-  //   when: (newParamObj) => newParamObj['order'],
-  //   default: () => {
-  //     if (sameQuery) {
-  //       return prevAnswersMap['orderNums'];
-  //     } else {
-  //       return Math.floor(Math.random() * 19 + 1);
-  //     }
-  //   },
-  // },
   {
     type: 'checkbox',
     name: 'newOrderNums',
@@ -175,7 +169,7 @@ const paramObjQuestions = (
     when: (newParamObj) => newParamObj['order'],
     default: () => {
       if (sameQuery) {
-        return [...prevAnswersMap['orderNums']];
+        return [...prevOrderNums];
       } else {
         return [Math.floor(Math.random() * 14 + 1)];
       }
@@ -195,13 +189,34 @@ const paramObjQuestions = (
     when: (newParamObj) => newParamObj['products'],
     default: () => {
       if (sameQuery) {
-        return prevAnswersMap['productNum'];
+        return prevProductNum;
       } else {
         return Math.floor(Math.random() * 199 + 1);
       }
     },
   },
 ];
+
+const editQueryQuestions1 = {
+  type: 'confirm',
+  name: 'editQueryBool',
+  message: "Do you want to edit the query's response body (default: NO)?",
+  default: false,
+};
+
+const editQueryQuestions2 = (queryObj) => ({
+  type: 'editor',
+  name: 'newEditedQueryObj',
+  message: 'Please only edit the response body of the query! 🙏',
+  default: () => queryObj,
+  // validate: function (text) {
+  //   if (text.split('\n').length < 3) {
+  //     return 'Must be at least 3 lines.';
+  //   }
+
+  //   return true;
+  // },
+});
 
 const askAgainQuestions = [
   {
@@ -212,7 +227,7 @@ const askAgainQuestions = [
   },
   {
     type: 'confirm',
-    name: 'sameQueryUpdate',
+    name: 'sameQueryBoolean',
     message: 'Do you want to run the same query again (default: YES)? 📣',
     when: (answers) => answers.askAgain,
     default: true,
@@ -228,5 +243,7 @@ module.exports = {
   queryTypeQuestions,
   queryNameQuestions,
   paramObjQuestions,
+  editQueryQuestions1,
+  editQueryQuestions2,
   askAgainQuestions,
 };

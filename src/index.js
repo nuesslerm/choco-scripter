@@ -22,6 +22,8 @@ const {
   queryTypeQuestions,
   queryNameQuestions,
   paramObjQuestions,
+  editQueryQuestions1,
+  editQueryQuestions2,
   askAgainQuestions,
 } = require('./questions');
 const { cmdStrGen, wait } = require('./helpers/misc');
@@ -56,13 +58,10 @@ async function main() {
 
   const { ghOAuth } = await inquirer.prompt(ghOAuthQuestions);
 
-  const answersMap = {};
-  answersMap['ghOAuth'] = ghOAuth;
-
   let ghClientSecret = await getGHClientSecret_DB();
 
   if (!ghClientSecret) {
-    console.log('Please provide the oauth client secret first. 🙏');
+    console.log('Please provide the client secret first. 🙏');
     await wait(1000);
 
     const { ghClientSecret } = await inquirer.prompt(ghClientSecretQuestions);
@@ -125,149 +124,149 @@ async function main() {
 
   // ---------------------------------------------------------------------------
 
-  const { profile: configProfilesObj } = await loadChocoConfig();
+  const { profile: chocoProfiles } = await loadChocoConfig();
 
-  configProfilesArr = Object.values(configProfilesObj);
-
-  const stageSet = new Set();
-
-  for (let configProfile of configProfilesArr) {
-    stageSet.add(configProfile.stage);
-  }
-
-  // ---------------------------------------------------------------------------
-
-  const { environment } = await inquirer.prompt(environmentQuestions(stageSet));
-
-  answersMap['environment'] = environment;
-
-  const userTypeSet = new Set();
-
-  for (let configProfile of configProfilesArr) {
-    if (configProfile.stage === environment) {
-      userTypeSet.add(configProfile.userType);
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-
-  const { userType } = await inquirer.prompt(userTypeQuestions(userTypeSet));
-
-  answersMap['userType'] = userType;
-
-  const userProfileSet = new Set();
-
-  for (let key in configProfilesObj) {
-    if (
-      configProfilesObj[key].stage === environment &&
-      configProfilesObj[key].userType === userType
-    ) {
-      userProfileSet.add({
-        key,
-        userIdentifier: configProfilesObj[key].userIdentifier,
-      });
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-
-  const { userProfile: userProfileStrArr } = await inquirer.prompt(
-    userProfileQuestions(userType, userProfileSet)
+  const stagesArr = Object.values(chocoProfiles).reduce(
+    (unique, { stage }) =>
+      unique.includes(stage) ? unique : [...unique, stage],
+    []
   );
 
-  userProfile = userProfileStrArr.split(': ')[0];
+  // ---------------------------------------------------------------------------
 
-  answersMap['userProfile'] = userProfile;
+  const { environment } = await inquirer.prompt(
+    environmentQuestions(stagesArr)
+  );
+
+  const filteredUserTypeArr = Object.values(chocoProfiles)
+    .filter(({ stage }) => stage === environment)
+    .reduce(
+      (unique, { userType }) =>
+        unique.includes(userType) ? unique : [...unique, userType],
+      []
+    );
+
+  // ---------------------------------------------------------------------------
+
+  const { type } = await inquirer.prompt(
+    userTypeQuestions(filteredUserTypeArr)
+  );
+
+  const filteredProfilesArr = Object.entries(chocoProfiles)
+    .filter(
+      ([__, { stage, userType }]) => stage === environment && userType === type
+    )
+    .map(([profile, { userIdentifier }]) => `${profile} : ${userIdentifier}`);
+
+  // ---------------------------------------------------------------------------
+
+  const { profile: userProfileStr } = await inquirer.prompt(
+    userProfileQuestions(type, filteredProfilesArr)
+  );
+
+  profile = userProfileStr.split(' : ')[0];
 
   // ---------------------------------------------------------------------------
   // START OF RECURSION
   // ---------------------------------------------------------------------------
 
-  await repeatQuery(answersMap, false);
+  await repeatQuery({ type, profile }, false);
 }
 
 // ---------------------------------------------------------------------------
 // RECURSIVE FUNCTION
 // ---------------------------------------------------------------------------
 
-async function repeatQuery(prevAnswersMap, sameQuery) {
+async function repeatQuery(answersObj, sameQueryBool) {
   let {
+    type,
+    profile,
     queriesObj,
     queryName,
-    queryParamArr,
+    queryObj,
     paramObj: prevParamObj,
-  } = prevAnswersMap;
-  const newOrderParamObjArr = [];
+    orderNums: prevOrderNums,
+    productNum: prevProductNum,
+    editedQueryObj: prevEditedQueryObj,
+  } = answersObj;
 
-  if (!sameQuery) {
-    const { queryType } = await inquirer.prompt(queryTypeQuestions);
+  let orderParamsArr = [];
+  let newEditedQueryObj;
 
-    const allEntries = await getGhQueries_DB();
+  if (!sameQueryBool) {
+    const { queryType } = await inquirer.prompt(queryTypeQuestions(type));
 
-    queriesObj = allEntries[queryType];
-
-    prevAnswersMap['queriesObj'] = queriesObj;
+    queriesObj = (await getGhQueries_DB())[queryType];
 
     // ---------------------------------------------------------------------------
 
     ({ queryName } = await inquirer.prompt(
-      queryNameQuestions(queryType, queriesObj)
+      queryNameQuestions(queriesObj, queryType)
     ));
 
-    queryParamArr = [
-      ...new Set(JSON.stringify(queriesObj[queryName]).match(/(\$)\w+/g)),
-    ];
-
-    prevAnswersMap['queryName'] = queryName;
-    prevAnswersMap['queryParamArr'] = queryParamArr;
+    queryObj = queriesObj[queryName];
   }
+
+  queryParamArr = [...new Set(JSON.stringify(queryObj).match(/(\$)\w+/g))];
 
   // ---------------------------------------------------------------------------
 
   const { newOrderNums, newProductNum, ...newParamObj } = await inquirer.prompt(
-    paramObjQuestions(queryParamArr, sameQuery, prevParamObj, prevAnswersMap)
+    paramObjQuestions(
+      queryParamArr,
+      sameQueryBool,
+      prevParamObj,
+      prevOrderNums,
+      prevProductNum
+    )
   );
 
   if (!!newOrderNums) {
     let { order, ...rest } = newParamObj;
 
-    for (let orderNum of newOrderNums) {
-      newOrderParamObjArr.push({
-        ...rest,
-        order: defaultOrder(parseInt(orderNum)),
-      });
-    }
-
-    prevAnswersMap['orderNums'] = newOrderNums;
+    // map creates a new array with each element being the result of the callback function
+    orderParamsArr = newOrderNums.map((orderNum) => ({
+      ...rest,
+      order: defaultOrder(parseInt(orderNum)),
+    }));
   }
 
   if (!!newProductNum) {
     newParamObj['products'] = defaultAdminProductArr(parseInt(newProductNum));
-
-    prevAnswersMap['productNum'] = newProductNum;
   }
-
-  prevAnswersMap['paramObj'] = newParamObj;
 
   // ---------------------------------------------------------------------------
 
-  if (!sameQuery) {
-    try {
-      await fs.outputFile(
-        `${appDir}/../database/temp/${queryName}.graphql`,
-        `${queriesObj[queryName]}`
-      );
-    } catch (err) {
-      throw new Error(err);
-    }
+  const { editQueryBool } = await inquirer.prompt(editQueryQuestions1);
+
+  if (editQueryBool) {
+    ({ newEditedQueryObj } = await inquirer.prompt(
+      editQueryQuestions2(queryObj)
+    ));
+  } else if (!sameQueryBool) {
+    newEditedQueryObj = queryObj;
+  } else {
+    newEditedQueryObj = prevEditedQueryObj;
+  }
+
+  // ---------------------------------------------------------------------------
+
+  // writing .graphql file to temp folder in database
+  try {
+    await fs.outputFile(
+      `${appDir}/../database/temp/${queryName}.graphql`,
+      `${newEditedQueryObj ? newEditedQueryObj : queryObj}`
+    );
+  } catch (err) {
+    throw new Error(err);
   }
 
   try {
-    if (!!newOrderParamObjArr.length) {
-      for (let orderParamObj of newOrderParamObjArr) {
+    if (!!orderParamsArr.length) {
+      for (let orderParams of orderParamsArr) {
         // placing an order
         const { stdout } = await exec(
-          cmdStrGen(prevAnswersMap['userProfile'], queryName, orderParamObj)
+          cmdStrGen(profile, queryName, orderParams)
         );
 
         // console.logging response from BE
@@ -277,9 +276,7 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
         await wait(1000);
       }
     } else {
-      const { stdout } = await exec(
-        cmdStrGen(prevAnswersMap['userProfile'], queryName, newParamObj)
-      );
+      const { stdout } = await exec(cmdStrGen(profile, queryName, newParamObj));
 
       console.log(JSON.stringify(JSON.parse(stdout), null, 2));
     }
@@ -291,12 +288,25 @@ async function repeatQuery(prevAnswersMap, sameQuery) {
   // REPEATING THE LOOP
   // ---------------------------------------------------------------------------
 
-  const { askAgain, sameQueryUpdate } = await inquirer.prompt(
+  const { askAgain, sameQueryBoolean } = await inquirer.prompt(
     askAgainQuestions
   );
 
   if (askAgain) {
-    await repeatQuery(prevAnswersMap, sameQueryUpdate);
+    await repeatQuery(
+      {
+        type,
+        profile,
+        queriesObj,
+        queryName,
+        queryObj,
+        paramObj: newParamObj,
+        orderNums: newOrderNums,
+        productNum: newProductNum,
+        editedQueryObj: newEditedQueryObj,
+      },
+      sameQueryBoolean
+    );
   } else {
     try {
       await fs.emptyDir(`${appDir}/../database/temp`);
