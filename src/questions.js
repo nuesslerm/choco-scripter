@@ -200,22 +200,31 @@ const paramObjQuestions = (
 const editQueryQuestions1 = {
   type: 'confirm',
   name: 'editQueryBool',
-  message: "Do you want to edit the query's response body (default: NO)?",
+  message: "Do you want to edit the query's response body (default: NO)? 📝",
   default: false,
 };
 
-const editQueryQuestions2 = (queryObj) => ({
+const editQueryQuestions2 = (queryObj, queryParamArr) => ({
   type: 'editor',
   name: 'newEditedQueryObj',
-  message: 'Please only edit the response body of the query! 🙏',
+  message: 'Please only edit the response body! 🙏',
   default: () => queryObj,
-  // validate: function (text) {
-  //   if (text.split('\n').length < 3) {
-  //     return 'Must be at least 3 lines.';
-  //   }
+  validate: (txt) => {
+    const paramLength = queryParamArr.length;
+    const firstLine = txt.split('\n')[0];
+    const firstLineMatch = txt.split('\n')[0].match(/(\$)\w+/g) || [];
+    const secondLineMatch = txt.split('\n')[1].match(/(\$)\w+/g) || [];
 
-  //   return true;
-  // },
+    if (
+      firstLineMatch.length !== paramLength ||
+      secondLineMatch.length !== paramLength ||
+      !['mutation', 'query'].includes(firstLine.match(/\w+/g)[0])
+    ) {
+      return 'Please only edit the response body!';
+    }
+
+    return true;
+  },
 });
 
 const askAgainQuestions = [

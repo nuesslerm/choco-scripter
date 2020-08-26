@@ -241,7 +241,7 @@ async function repeatQuery(answersObj, sameQueryBool) {
 
   if (editQueryBool) {
     ({ newEditedQueryObj } = await inquirer.prompt(
-      editQueryQuestions2(queryObj)
+      editQueryQuestions2(queryObj, queryParamArr)
     ));
   } else if (!sameQueryBool) {
     newEditedQueryObj = queryObj;
