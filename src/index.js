@@ -1,5 +1,10 @@
 const inquirer = require('inquirer');
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
+// https://www.npmjs.com/package/inquirer-list-search-prompt
+inquirer.registerPrompt(
+  'autocomplete',
+  require('inquirer-autocomplete-prompt')
+);
 
 const fs = require('fs-extra');
 const exec = require('await-exec');
