@@ -1,7 +1,7 @@
 const inquirer = require('inquirer');
 inquirer.registerPrompt('recursive', require('inquirer-recursive'));
-// https://www.npmjs.com/package/inquirer-list-search-prompt
-inquirer.registerPrompt(
+// https://github.com/mamoruuu/inquirer-autocomplete-prompt#readme
+https: inquirer.registerPrompt(
   'autocomplete',
   require('inquirer-autocomplete-prompt')
 );
