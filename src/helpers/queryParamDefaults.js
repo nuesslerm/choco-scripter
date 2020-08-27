@@ -1,5 +1,6 @@
 const uuid = require('uuid');
 const _ = require('lodash');
+const faker = require('faker');
 
 const defaultOrder = (num) => {
   if (num <= 0) num = 1;
@@ -55,10 +56,26 @@ const defaultChat = {
   supplierId: '3dd6d61e-01dc-4403-bda8-54c15d3926b4',
 };
 
+const defaultUser = (isSupplier) => ({
+  id: uuid.v4(),
+  name: faker.name.findName(),
+  phone: faker.phone.phoneNumber('+49###########'),
+  email: faker.internet.email(),
+  businessName: faker.company.companyName(),
+  cutOffTime: '6pm',
+  deliveryCosts: '$100',
+  minOrderAmount: '5kg',
+  position: faker.company.catchPhraseDescriptor(),
+  chocoUser: true,
+  supplier: isSupplier,
+  locale: _.sample(['de-DE', 'en-US', 'fr-FR', 'es-ES', 'pt-BR', 'it-IT']),
+});
+
 module.exports = {
   defaultOrder,
   defaultAdminProductArr,
   defaultProduct,
   defaultMessage,
   defaultChat,
+  defaultUser,
 };

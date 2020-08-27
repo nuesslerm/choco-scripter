@@ -6,6 +6,8 @@ https: inquirer.registerPrompt(
   require('inquirer-autocomplete-prompt')
 );
 
+const faker = require('faker');
+
 const fs = require('fs-extra');
 const exec = require('await-exec');
 const open = require('open');
@@ -17,6 +19,7 @@ const { loadChocoConfig } = require('./helpers/loadChocoConfig');
 const {
   defaultOrder,
   defaultAdminProductArr,
+  defaultUser,
 } = require('./helpers/queryParamDefaults');
 const {
   ghClientSecretQuestions,
@@ -216,7 +219,12 @@ async function repeatQuery(answersObj, sameQueryBool) {
 
   // ---------------------------------------------------------------------------
 
-  const { newOrderNums, newProductNum, ...newParamObj } = await inquirer.prompt(
+  const {
+    newOrderNums,
+    newProductNum,
+    isSupplier,
+    ...newParamObj
+  } = await inquirer.prompt(
     paramObjQuestions(
       queryParamArr,
       sameQueryBool,
@@ -226,7 +234,7 @@ async function repeatQuery(answersObj, sameQueryBool) {
     )
   );
 
-  if (!!newOrderNums) {
+  if (newOrderNums !== undefined) {
     let { order, ...rest } = newParamObj;
 
     // map creates a new array with each element being the result of the callback function
@@ -236,8 +244,12 @@ async function repeatQuery(answersObj, sameQueryBool) {
     }));
   }
 
-  if (!!newProductNum) {
+  if (newProductNum !== undefined) {
     newParamObj['products'] = defaultAdminProductArr(parseInt(newProductNum));
+  }
+
+  if (isSupplier !== undefined) {
+    newParamObj['user'] = defaultUser(isSupplier);
   }
 
   // ---------------------------------------------------------------------------

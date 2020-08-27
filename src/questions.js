@@ -129,6 +129,8 @@ const paramObjQuestions = (
           return defaultMessage;
         } else if (/chat/gi.test(queryParam)) {
           return defaultChat;
+        } else if (/user/gi.test(queryParam)) {
+          return 'UserInput - auto-generated';
         }
       }
     },
@@ -194,6 +196,13 @@ const paramObjQuestions = (
         return Math.floor(Math.random() * 199 + 1);
       }
     },
+  },
+  {
+    type: 'confirm',
+    name: 'isSupplier',
+    message: `Is your user a supplier? 🎬`,
+    default: true,
+    when: (newParamObj) => newParamObj['user'],
   },
 ];
 
