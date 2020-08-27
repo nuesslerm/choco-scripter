@@ -1,6 +1,7 @@
 const uuid = require('uuid');
 const _ = require('lodash');
 const faker = require('faker');
+const getUser_DB = require('./getUser_DB');
 
 const defaultOrder = (num) => {
   if (num <= 0) num = 1;
@@ -45,22 +46,40 @@ const defaultMessage = {
   media: false,
 };
 
-const defaultChat = {
-  userIds: [
-    'af1457f7-508f-46d0-ae1d-d52abac20c2e',
-    'edc3743e-0910-4a4f-9dc9-95d88733b820',
-  ],
-  chatName: 'support chat now1',
-  restaurantName: 'resto test',
-  customerNumber: 'delivery test',
-  supplierId: '3dd6d61e-01dc-4403-bda8-54c15d3926b4',
+const defaultChat = async (env, participantsNum) => {
+  const userArr = await getUser_DB(env);
+  const mappedUserArr = userArr.map(({ user }) => user);
+
+  const filteredUserIdsArr = mappedUserArr.reduce(
+    (unique, { id }) => (unique.includes(id) ? unique : [...unique, id]),
+    []
+  );
+
+  const filteredSupplierIdsArr = mappedUserArr
+    .filter(({ supplier }) => supplier === true)
+    .reduce(
+      (unique, { id }) => (unique.includes(id) ? unique : [...unique, id]),
+      []
+    );
+
+  return {
+    userIds: _.sampleSize(filteredUserIdsArr, participantsNum),
+    chatName: faker.company.catchPhrase(),
+    restaurantName: faker.company.companyName(),
+    deliveryAddress: faker.address.streetAddress(),
+    customerNumber: '0123456789',
+    supplierId: _.sample(filteredSupplierIdsArr),
+  };
 };
 
 const defaultUser = (isSupplier) => ({
   id: uuid.v4(),
   name: faker.name.findName(),
-  phone: faker.phone.phoneNumber('+49###########'),
-  email: faker.internet.email(),
+  phone: faker.phone.phoneNumber('+49163296####'),
+  email: faker.internet
+    .email()
+    .toLowerCase()
+    .replace(/(\@\w+\.\w+)/gi, '@choco.com'),
   businessName: faker.company.companyName(),
   cutOffTime: '6pm',
   deliveryCosts: '$100',

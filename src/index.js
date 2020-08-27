@@ -6,8 +6,6 @@ https: inquirer.registerPrompt(
   require('inquirer-autocomplete-prompt')
 );
 
-const faker = require('faker');
-
 const fs = require('fs-extra');
 const exec = require('await-exec');
 const open = require('open');
@@ -15,11 +13,12 @@ const path = require('path');
 
 const appDir = path.dirname(require.main.filename);
 
-const { loadChocoConfig } = require('./helpers/loadChocoConfig');
+const loadChocoConfig = require('./helpers/loadChocoConfig');
 const {
   defaultOrder,
   defaultAdminProductArr,
   defaultUser,
+  defaultChat,
 } = require('./helpers/queryParamDefaults');
 const {
   ghClientSecretQuestions,
@@ -36,6 +35,8 @@ const {
 } = require('./questions');
 const { cmdStrGen, wait } = require('./helpers/misc');
 const setGHClientSecret_DB = require('./helpers/setGHClientSecret_DB');
+const setUser_DB = require('./helpers/setUser_DB');
+const setChat_DB = require('./helpers/setChat_DB');
 const getGHClientSecret_DB = require('./helpers/getGHClientSecret_DB');
 
 // server entry point
@@ -178,7 +179,7 @@ async function main() {
   // START OF RECURSION
   // ---------------------------------------------------------------------------
 
-  await repeatQuery({ type, profile }, false);
+  await repeatQuery({ environment, type, profile }, false);
 }
 
 // ---------------------------------------------------------------------------
@@ -187,6 +188,7 @@ async function main() {
 
 async function repeatQuery(answersObj, sameQueryBool) {
   let {
+    environment,
     type,
     profile,
     queriesObj,
@@ -195,6 +197,7 @@ async function repeatQuery(answersObj, sameQueryBool) {
     paramObj: prevParamObj,
     orderNums: prevOrderNums,
     productNum: prevProductNum,
+    chatNum: prevChatNum,
     editedQueryObj: prevEditedQueryObj,
   } = answersObj;
 
@@ -223,6 +226,7 @@ async function repeatQuery(answersObj, sameQueryBool) {
     newOrderNums,
     newProductNum,
     isSupplier,
+    newChatNum,
     ...newParamObj
   } = await inquirer.prompt(
     paramObjQuestions(
@@ -230,7 +234,8 @@ async function repeatQuery(answersObj, sameQueryBool) {
       sameQueryBool,
       prevParamObj,
       prevOrderNums,
-      prevProductNum
+      prevProductNum,
+      prevChatNum
     )
   );
 
@@ -250,6 +255,10 @@ async function repeatQuery(answersObj, sameQueryBool) {
 
   if (isSupplier !== undefined) {
     newParamObj['user'] = defaultUser(isSupplier);
+  }
+
+  if (newChatNum !== undefined) {
+    newParamObj['chat'] = await defaultChat(environment, parseInt(newChatNum));
   }
 
   // ---------------------------------------------------------------------------
@@ -295,7 +304,14 @@ async function repeatQuery(answersObj, sameQueryBool) {
     } else {
       const { stdout } = await exec(cmdStrGen(profile, queryName, newParamObj));
 
-      console.log(JSON.stringify(JSON.parse(stdout), null, 2));
+      const parsed = JSON.parse(stdout);
+      console.log(JSON.stringify(parsed, null, 2));
+
+      if (parsed.hasOwnProperty('userCreate')) {
+        setUser_DB(environment, parsed['userCreate']);
+      } else if (parsed.hasOwnProperty('chatCreate')) {
+        setChat_DB(environment, parsed['chatCreate']);
+      }
     }
   } catch (err) {
     throw new Error(err);
@@ -312,6 +328,7 @@ async function repeatQuery(answersObj, sameQueryBool) {
   if (askAgain) {
     await repeatQuery(
       {
+        environment,
         type,
         profile,
         queriesObj,
@@ -320,6 +337,7 @@ async function repeatQuery(answersObj, sameQueryBool) {
         paramObj: newParamObj,
         orderNums: newOrderNums,
         productNum: newProductNum,
+        chatNum: newChatNum,
         editedQueryObj: newEditedQueryObj,
       },
       sameQueryBoolean

@@ -9,4 +9,4 @@ const loadChocoConfig = async () => {
   }
 };
 
-module.exports = { loadChocoConfig };
+module.exports = loadChocoConfig;

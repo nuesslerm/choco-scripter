@@ -4,7 +4,6 @@ const uuid = require('uuid');
 const {
   defaultProduct,
   defaultMessage,
-  defaultChat,
 } = require('./helpers/queryParamDefaults');
 
 const requireLetterNumberLength = (value) => {
@@ -26,7 +25,7 @@ const ghClientSecretQuestions = {
 const ghOAuthQuestions = {
   type: 'confirm',
   name: 'ghOAuth',
-  message: 'Do you want to load queries from GitHub (defaul: NO)? 🎁',
+  message: 'Do you want to load queries from GitHub (y/[N])? 🎁',
   default: false,
 };
 
@@ -99,7 +98,8 @@ const paramObjQuestions = (
   sameQuery,
   prevParamObj,
   prevOrderNums,
-  prevProductNum
+  prevProductNum,
+  prevChatNum
 ) => [
   ...queryParamArr.map((queryParam) => ({
     type: 'input',
@@ -128,7 +128,7 @@ const paramObjQuestions = (
         } else if (/message/gi.test(queryParam)) {
           return defaultMessage;
         } else if (/chat/gi.test(queryParam)) {
-          return defaultChat;
+          return 'ChatInput - auto-generated';
         } else if (/user/gi.test(queryParam)) {
           return 'UserInput - auto-generated';
         }
@@ -200,16 +200,29 @@ const paramObjQuestions = (
   {
     type: 'confirm',
     name: 'isSupplier',
-    message: `Is your user a supplier? 🎬`,
+    message: 'Is your user a supplier ([Y]/n)? 🎬',
     default: true,
     when: (newParamObj) => newParamObj['user'],
+  },
+  {
+    type: 'input',
+    name: 'newChatNum',
+    message: 'How many users should the chat contain? 🎬',
+    when: (newParamObj) => newParamObj['chat'],
+    default: () => {
+      if (sameQuery) {
+        return prevChatNum;
+      } else {
+        return 2;
+      }
+    },
   },
 ];
 
 const editQueryQuestions1 = {
   type: 'confirm',
   name: 'editQueryBool',
-  message: "Do you want to edit the query's response body (default: NO)? 📝",
+  message: "Do you want to edit the query's response body (y/[N])? 📝",
   default: false,
 };
 
@@ -240,13 +253,13 @@ const askAgainQuestions = [
   {
     type: 'confirm',
     name: 'askAgain',
-    message: 'Do you want to run another query (default: YES)? 💪',
+    message: 'Do you want to run another query ([Y]/n)? 💪',
     default: true,
   },
   {
     type: 'confirm',
     name: 'sameQueryBoolean',
-    message: 'Do you want to run the same query again (default: YES)? 📣',
+    message: 'Do you want to run the same query again ([Y]/n)? 📣',
     when: (answers) => answers.askAgain,
     default: true,
   },

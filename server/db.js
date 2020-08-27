@@ -13,4 +13,12 @@ db.queriesStore = Datastore.create({
   filename: `${appDir}/../database/queriesStore.db`,
 });
 
+db.userStore = Datastore.create({
+  filename: `${appDir}/../database/userStore.db`,
+});
+
+db.chatStore = Datastore.create({
+  filename: `${appDir}/../database/chatStore.db`,
+});
+
 module.exports = db;
